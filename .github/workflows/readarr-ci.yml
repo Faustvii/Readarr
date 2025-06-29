@@ -97,6 +97,7 @@ jobs:
         run: |
           ./test.sh Linux Unit Test
         env:
+          TEST_DIR: ${{ github.workspace }}
           OUTPUTFOLDER: _output
           TESTSFOLDER: _tests
 
@@ -117,8 +118,7 @@ jobs:
 
       - name: Run Integration Tests (Linux-x64 with Postgres14)
         run: |
-          chmod a+x _tests/test.sh
-          TEST_DIR=${{ github.workspace }}/_tests _tests/test.sh Linux Integration Test
+          TEST_DIR=${{ github.workspace }}/_tests ./test.sh Linux Integration Test
         env:
           Readarr__Postgres__Host: "localhost"
           Readarr__Postgres__Port: "5432"
@@ -144,8 +144,7 @@ jobs:
 
       - name: Run Integration Tests (Linux-x64 with Postgres15)
         run: |
-          chmod a+x _tests/test.sh
-          TEST_DIR=${{ github.workspace }}/_tests _tests/test.sh Linux Integration Test
+          TEST_DIR=${{ github.workspace }}/_tests ./test.sh Linux Integration Test
         env:
           Readarr__Postgres__Host: "localhost"
           Readarr__Postgres__Port: "5432"
