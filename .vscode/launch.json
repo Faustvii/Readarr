@@ -12,10 +12,16 @@
       // If you have changed target frameworks, make sure to update the program path.
       "program": "${workspaceFolder}/_output/net6.0/Readarr",
       "args": [],
-      "cwd": "${workspaceFolder}",
+      "cwd": "${workspaceFolder}/src",
       // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
       "console": "integratedTerminal",
-      "stopAtEntry": false
+      "stopAtEntry": false,
+      "sourceFileMap": {
+        "./Readarr.Core": "${workspaceFolder}/src/NzbDrone.Core",
+        "./Readarr.Api": "${workspaceFolder}/src/Readarr.Api",
+        "./Readarr.Automation.Test": "${workspaceFolder}/src/NzbDrone.Automation.Test",
+        "./Readarr.Api.V1": "${workspaceFolder}/src/Readarr.Api.V1",
+      }
     },
     {
       "name": ".NET Core Attach",
