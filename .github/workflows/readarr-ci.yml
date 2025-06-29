@@ -92,12 +92,6 @@ jobs:
           OUTPUTFOLDER: ${{ env.OUTPUT_FOLDER }}
           TESTSFOLDER: ${{ env.TESTS_FOLDER }}
 
-      - name: Debug Output Folder Contents
-        run: |
-          echo "--- Listing contents of ${{ env.OUTPUT_FOLDER }} ---"
-          ls -lR ${{ env.OUTPUT_FOLDER }}
-          echo "---------------------------------------------------"
-
       - name: Clean up intermediate output
         run: |
           find ${{ env.OUTPUT_FOLDER }} -type f ! -path "*/publish/*" -exec rm -rf {} \;
@@ -116,12 +110,6 @@ jobs:
         run: |
           find ${{ env.OUTPUT_FOLDER }} -name "Readarr" -exec chmod a+x {} \;
           find ${{ env.OUTPUT_FOLDER }} -name "Readarr.Update" -exec chmod a+x {} \;
-
-      - name: Debug Output After Cleanup Folder Contents
-        run: |
-          echo "--- Listing contents of ${{ env.OUTPUT_FOLDER }} ---"
-          ls -lR ${{ env.OUTPUT_FOLDER }}
-          echo "---------------------------------------------------"
 
       - name: Publish Test Packages Artifact
         uses: actions/upload-artifact@v4
@@ -169,8 +157,7 @@ jobs:
 
       - name: Run Unit Tests (Linux-x64)
         run: |
-          chmod a+x ${{ env.TESTS_FOLDER }}/test.sh
-          TEST_DIR=${{ github.workspace }}/${{ env.TESTS_FOLDER }} ${{ env.TESTS_FOLDER }}/test.sh Linux Unit Test
+          ./test.sh Linux Unit Test
         env:
           OUTPUTFOLDER: ${{ env.OUTPUT_FOLDER }}
           TESTSFOLDER: ${{ env.TESTS_FOLDER }}
@@ -284,6 +271,13 @@ jobs:
           username: ${{ github.actor }} # Uses the GitHub Actions bot username
           password: ${{ secrets.GITHUB_TOKEN }} # Uses the automatically provided GitHub Token
 
+      - name: Set Lowercase Repository Name
+        id: set_lowercase_repo
+        run: |
+          LOWERCASE_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_REPO=${LOWERCASE_REPO}" >> $GITHUB_ENV
+        shell: bash
+
       - name: Build and Push Docker Image to GHCR
         uses: docker/build-push-action@v5
         with:
@@ -292,8 +286,8 @@ jobs:
           push: true
           # Image tags for GHCR follow the format: ghcr.io/<owner>/<repo>:<tag>
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ needs.build_meta.outputs.readarr_version }}
+            ghcr.io/${{ env.IMAGE_REPO }}:latest
+            ghcr.io/${{ env.IMAGE_REPO }}:${{ needs.build_meta.outputs.readarr_version }}
           platforms: linux/amd64
           build-args: |
             VERSION=${{ needs.build_meta.outputs.readarr_version }}
