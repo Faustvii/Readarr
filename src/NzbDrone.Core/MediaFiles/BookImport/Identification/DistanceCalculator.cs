@@ -83,6 +83,11 @@ namespace NzbDrone.Core.MediaFiles.BookImport.Identification
             else if (isbn.IsNullOrWhiteSpace() != edition.Isbn13.IsNullOrWhiteSpace())
             {
                 dist.AddBool("isbn_missing", true);
+                if (edition.Isbn13.IsNullOrWhiteSpace())
+                {
+                    dist.AddBool("edition_isbn_missing", true);
+                }
+
                 Logger.Trace("isbn: '{0}' vs '{1}'; {2}", isbn, edition.Isbn13, dist.NormalizedDistance());
             }
 
@@ -95,6 +100,11 @@ namespace NzbDrone.Core.MediaFiles.BookImport.Identification
             else if (asin.IsNullOrWhiteSpace() != edition.Asin.IsNullOrWhiteSpace())
             {
                 dist.AddBool("asin_missing", true);
+                if (edition.Asin.IsNullOrWhiteSpace())
+                {
+                    dist.AddBool("edition_asin_missing", true);
+                }
+
                 Logger.Trace("asin: '{0}' vs '{1}'; {2}", asin, edition.Asin, dist.NormalizedDistance());
             }
 
@@ -145,9 +155,11 @@ namespace NzbDrone.Core.MediaFiles.BookImport.Identification
                 {
                     // text books should prefer ebook formats
                     dist.AddBool("ebook_format", !EbookFormats.Contains(edition.Format));
+                    Logger.Trace($"ebook_format: {edition.Format} - {!EbookFormats.Contains(edition.Format)}; {dist.NormalizedDistance()}");
 
                     // text books should not match audio entries
                     dist.AddBool("wrong_format", AudiobookFormats.Contains(edition.Format));
+                    Logger.Trace($"wrong_format: {edition.Format} - {AudiobookFormats.Contains(edition.Format)}; {dist.NormalizedDistance()}");
                 }
                 else
                 {
