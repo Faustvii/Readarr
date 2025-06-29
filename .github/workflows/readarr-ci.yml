@@ -6,22 +6,22 @@ on:
       - develop
       - master
     paths-ignore:
-      - '.github/**'
-      - 'src/Readarr.Api.*/openapi.json'
+      - ".github/**"
+      - "src/Readarr.Api.*/openapi.json"
   pull_request:
     branches:
       - develop
     paths-ignore:
-      - '.github/**'
-      - 'src/NzbDrone.Core/Localization/Core/**'
-      - 'src/Readarr.Api.*/openapi.json'
+      - ".github/**"
+      - "src/NzbDrone.Core/Localization/Core/**"
+      - "src/Readarr.Api.*/openapi.json"
 
 env:
-  OUTPUT_FOLDER: './_output'
-  ARTIFACTS_FOLDER: './_artifacts'
-  TESTS_FOLDER: './_tests'
-  DOTNET_VERSION: '6.0.x'
-  NODE_VERSION: '20.x'
+  OUTPUT_FOLDER: "./_output"
+  ARTIFACTS_FOLDER: "./_artifacts"
+  TESTS_FOLDER: "./_tests"
+  DOTNET_VERSION: "6.0.x"
+  NODE_VERSION: "20.x"
 
 jobs:
   build_meta:
@@ -62,7 +62,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          submodules: 'true'
+          submodules: "true"
           fetch-depth: 1
 
       - name: Setup .NET SDK
@@ -105,12 +105,6 @@ jobs:
           find ${{ env.TESTS_FOLDER }} -type f ! -path "*/publish/*" -exec rm -rf {} \;
           find ${{ env.TESTS_FOLDER }} -depth -empty -type d -exec rm -r "{}" \;
 
-      - name: Debug Output After Cleanup Folder Contents
-        run: |
-          echo "--- Listing contents of ${{ env.OUTPUT_FOLDER }} ---"
-          ls -lR ${{ env.OUTPUT_FOLDER }}
-          echo "---------------------------------------------------"
-
       - name: Build Readarr Frontend
         run: |
           ./build.sh --frontend
@@ -123,9 +117,19 @@ jobs:
           find ${{ env.OUTPUT_FOLDER }} -name "Readarr" -exec chmod a+x {} \;
           find ${{ env.OUTPUT_FOLDER }} -name "Readarr.Update" -exec chmod a+x {} \;
 
+      - name: Debug Output After Cleanup Folder Contents
+        run: |
+          echo "--- Listing contents of ${{ env.OUTPUT_FOLDER }} ---"
+          ls -lR ${{ env.OUTPUT_FOLDER }}
+          echo "---------------------------------------------------"
+
+      - name: Create Readarr Package
+        run: |
+          ./build.sh --package
+
       - name: Create Linux Musl x64 Tarball for Docker
         run: |
-          tar -czf ${{ github.workspace }}/readarr-linux-musl-x64.tar.gz -C ${{ env.OUTPUT_FOLDER }}/Readarr.Update/net6.0/linux-musl-x64/publish .
+          tar -czf ${{ github.workspace }}/readarr-linux-musl-x64.tar.gz -C ${{ env.ARTIFACTS_FOLDER }}/linux-musl-x64/net6.0/Readarr .
 
       - name: Publish Linux Musl x64 Tarball Artifact
         uses: actions/upload-artifact@v4
@@ -140,7 +144,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          submodules: 'true'
+          submodules: "true"
           fetch-depth: 1
 
       - name: Setup .NET SDK
@@ -164,7 +168,7 @@ jobs:
         if: always()
         with:
           name: Unit-Test-Results
-          path: '**/TestResult.xml'
+          path: "**/TestResult.xml"
 
       - name: Start PostgreSQL 14 for Integration Tests
         run: |
@@ -174,20 +178,20 @@ jobs:
           -p 5432:5432/tcp \
           postgres:14
         env:
-          Readarr__Postgres__Host: 'localhost'
-          Readarr__Postgres__Port: '5432'
-          Readarr__Postgres__User: 'readarr'
-          Readarr__Postgres__Password: 'readarr'
+          Readarr__Postgres__Host: "localhost"
+          Readarr__Postgres__Port: "5432"
+          Readarr__Postgres__User: "readarr"
+          Readarr__Postgres__Password: "readarr"
 
       - name: Run Integration Tests (Linux-x64 with Postgres14)
         run: |
           chmod a+x ${{ env.TESTS_FOLDER }}/test.sh
           TEST_DIR=${{ github.workspace }}/${{ env.TESTS_FOLDER }} ${{ env.TESTS_FOLDER }}/test.sh Linux Integration Test
         env:
-          Readarr__Postgres__Host: 'localhost'
-          Readarr__Postgres__Port: '5432'
-          Readarr__Postgres__User: 'readarr'
-          Readarr__Postgres__Password: 'readarr'
+          Readarr__Postgres__Host: "localhost"
+          Readarr__Postgres__Port: "5432"
+          Readarr__Postgres__User: "readarr"
+          Readarr__Postgres__Password: "readarr"
           OUTPUTFOLDER: ${{ env.OUTPUT_FOLDER }}
           TESTSFOLDER: ${{ env.TESTS_FOLDER }}
 
@@ -196,7 +200,7 @@ jobs:
         if: always()
         with:
           name: Integration-Test-Results-Postgres14
-          path: '**/TestResult.xml'
+          path: "**/TestResult.xml"
 
       - name: Start PostgreSQL 15 for Integration Tests
         run: |
@@ -206,20 +210,20 @@ jobs:
           -p 5432:5432/tcp \
           postgres:15
         env:
-          Readarr__Postgres__Host: 'localhost'
-          Readarr__Postgres__Port: '5432'
-          Readarr__Postgres__User: 'readarr'
-          Readarr__Postgres__Password: 'readarr'
+          Readarr__Postgres__Host: "localhost"
+          Readarr__Postgres__Port: "5432"
+          Readarr__Postgres__User: "readarr"
+          Readarr__Postgres__Password: "readarr"
 
       - name: Run Integration Tests (Linux-x64 with Postgres15)
         run: |
           chmod a+x ${{ env.TESTS_FOLDER }}/test.sh
           TEST_DIR=${{ github.workspace }}/${{ env.TESTS_FOLDER }} ${{ env.TESTS_FOLDER }}/test.sh Linux Integration Test
         env:
-          Readarr__Postgres__Host: 'localhost'
-          Readarr__Postgres__Port: '5432'
-          Readarr__Postgres__User: 'readarr'
-          Readarr__Postgres__Password: 'readarr'
+          Readarr__Postgres__Host: "localhost"
+          Readarr__Postgres__Port: "5432"
+          Readarr__Postgres__User: "readarr"
+          Readarr__Postgres__Password: "readarr"
           OUTPUTFOLDER: ${{ env.OUTPUT_FOLDER }}
           TESTSFOLDER: ${{ env.TESTS_FOLDER }}
 
@@ -228,7 +232,7 @@ jobs:
         if: always()
         with:
           name: Integration-Test-Results-Postgres15
-          path: '**/TestResult.xml'
+          path: "**/TestResult.xml"
 
   build_docker_image:
     runs-on: ubuntu-latest
