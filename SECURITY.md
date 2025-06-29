@@ -2,7 +2,14 @@
 
 ## Reporting a Vulnerability
 
-Please report (suspected) security vulnerabilities on Discord (preferred) to
-any of the Servarr Dev role holders (red names) or via email: development@servarr.com. You will receive a response from
-us within 72 hours. If the issue is confirmed, we will release a patch as soon
-as possible depending on complexity/severity.
+Please report (suspected) security vulnerabilities using the **Private vulnerability reporting** feature on this repository. You can find this option in the "Security" tab of this repository.
+
+This allows you to report vulnerabilities privately without making them public, which is the preferred method for security issues.
+
+Please include as much detail as possible about the vulnerability, including:
+- Description of the issue
+- Steps to reproduce
+- Potential impact
+- Any additional context
+
+This is a personal fork maintained for personal use, so response times may vary.
