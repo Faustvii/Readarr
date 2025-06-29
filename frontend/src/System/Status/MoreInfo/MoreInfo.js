@@ -37,12 +37,12 @@ class MoreInfo extends Component {
 
           <DescriptionListItemTitle>Source</DescriptionListItemTitle>
           <DescriptionListItemDescription>
-            <Link to="https://github.com/readarr/Readarr/">github.com/Readarr/Readarr</Link>
+            <Link to="https://github.com/faustvii/Readarr/">github.com/faustvii/Readarr</Link>
           </DescriptionListItemDescription>
 
           <DescriptionListItemTitle>Feature Requests</DescriptionListItemTitle>
           <DescriptionListItemDescription>
-            <Link to="https://github.com/readarr/Readarr/issues">github.com/Readarr/Readarr/issues</Link>
+            <Link to="https://github.com/faustvii/Readarr/issues">github.com/faustvii/Readarr/issues</Link>
           </DescriptionListItemDescription>
 
         </DescriptionList>
