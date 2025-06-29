@@ -134,6 +134,12 @@ jobs:
           name: Integration-Test-Results-Postgres14
           path: "**/TestResult.xml"
 
+      - name: Stop and Remove PostgreSQL 14
+        if: always()
+        run: |
+          docker stop postgres14 || true
+          docker rm postgres14 || true
+
       - name: Start PostgreSQL 15 for Integration Tests
         run: |
           docker run -d --name=postgres15 \
@@ -159,6 +165,12 @@ jobs:
         with:
           name: Integration-Test-Results-Postgres15
           path: "**/TestResult.xml"
+
+      - name: Stop and Remove PostgreSQL 15
+        if: always()
+        run: |
+          docker stop postgres15 || true
+          docker rm postgres15 || true
 
   build_docker_image:
     runs-on: ubuntu-latest
