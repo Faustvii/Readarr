@@ -123,6 +123,12 @@ jobs:
           ls -lR ${{ env.OUTPUT_FOLDER }}
           echo "---------------------------------------------------"
 
+      - name: Publish Test Packages Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: readarr-test-packages # Name of the artifact
+          path: ${{ env.TESTS_FOLDER }} # Path to the folder containing test outputs
+
       - name: Create Readarr Package
         run: |
           ./build.sh --package
@@ -151,6 +157,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Download Test Packages Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: readarr-test-packages # Name of the artifact to download
+          path: ${{ env.TESTS_FOLDER }} # Target path to download to (this will re-create _tests)
 
       - name: Make Test Dummy Executable (Unit)
         run: find ${{ env.TESTS_FOLDER }} -name "Readarr.Test.Dummy" -exec chmod a+x {} \;
