@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       readarr_version: ${{ steps.semantic.outputs.new_release_version }}
-      build_name: ${{ steps.semantic.outputs.new_release_version }}
       should_release: ${{ steps.semantic.outputs.new_release_published }}
       release_type: ${{ steps.semantic.outputs.release_type }}
     steps:
@@ -89,7 +88,7 @@ jobs:
           build-args: |
             VERSION=${{ needs.build_meta.outputs.readarr_version }}
             VENDOR=${{ github.repository_owner }}
-            BRANCH=${{ needs.build_meta.outputs.build_name }}
+            BRANCH=develop
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.version=${{ needs.build_meta.outputs.readarr_version }}
