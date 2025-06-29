@@ -376,11 +376,8 @@ then
     Build
     if [[ -z "$RID" || -z "$FRAMEWORK" ]];
     then
-        PackageTests "net6.0" "win-x64"
-        PackageTests "net6.0" "win-x86"
         PackageTests "net6.0" "linux-x64"
         PackageTests "net6.0" "linux-musl-x64"
-        PackageTests "net6.0" "osx-x64"
         if [ "$ENABLE_EXTRA_PLATFORMS" = "YES" ];
         then
             PackageTests "net6.0" "freebsd-x64"
@@ -412,16 +409,8 @@ then
 
     if [[ -z "$RID" || -z "$FRAMEWORK" ]];
     then
-        Package "net6.0" "win-x64"
-        Package "net6.0" "win-x86"
         Package "net6.0" "linux-x64"
         Package "net6.0" "linux-musl-x64"
-        Package "net6.0" "linux-arm64"
-        Package "net6.0" "linux-musl-arm64"
-        Package "net6.0" "linux-arm"
-        Package "net6.0" "linux-musl-arm"
-        Package "net6.0" "osx-x64"
-        Package "net6.0" "osx-arm64"
         if [ "$ENABLE_EXTRA_PLATFORMS" = "YES" ];
         then
             Package "net6.0" "freebsd-x64"
