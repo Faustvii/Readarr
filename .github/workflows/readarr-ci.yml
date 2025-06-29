@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - develop
-      - master
     paths-ignore:
       - ".github/**"
       - "src/Readarr.Api.*/openapi.json"
@@ -12,7 +11,6 @@ on:
     branches:
       - develop
     paths-ignore:
-      - ".github/**"
       - "src/NzbDrone.Core/Localization/Core/**"
       - "src/Readarr.Api.*/openapi.json"
 
@@ -40,13 +38,19 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Check Yarn Cache Location
+        run: |
+          yarn config get cache-folder
+          echo "Yarn cache folder: $(yarn config get cache-folder)"
+
       - name: Cache Yarn Packages
         id: yarn-cache
         uses: actions/cache@v4
         with:
-          path: ~/.yarn/cache
+          path: ~/.cache/yarn
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
+            ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
             ${{ runner.os }}-yarn-
 
       - name: Build and Run Tests
@@ -56,7 +60,7 @@ jobs:
         env:
           DOTNETVERSION: ${{ env.DOTNET_VERSION }}
           FORCE_COLOR: 0
-          YARN_CACHE_FOLDER: ${{ steps.yarn-cache.outputs.cache-hit == 'true' && '~/.yarn/cache' || '' }}
+          YARN_CACHE_FOLDER: ${{ steps.yarn-cache.outputs.cache-hit == 'true' && '~/.cache/yarn' || '' }}
 
       - name: Prepare Integration Test Environment
         run: |
@@ -78,73 +82,11 @@ jobs:
           OUTPUTFOLDER: _output
           TESTSFOLDER: _tests
 
-      - name: Publish Unit Test Results
-        uses: actions/upload-artifact@v4
+      - name: Parse Test Results
+        uses: dorny/test-reporter@v2
         if: always()
         with:
-          name: Unit-Test-Results
+          name: Unit Test Results
           path: "**/TestResult.xml"
-
-      # - name: Start PostgreSQL 14 for Integration Tests
-      #   run: |
-      #     docker run -d --name=postgres14 \
-      #     -e POSTGRES_PASSWORD=readarr \
-      #     -e POSTGRES_USER=readarr \
-      #     -p 5432:5432/tcp \
-      #     postgres:14
-
-      # - name: Run Integration Tests (Linux-x64 with Postgres14)
-      #   run: |
-      #     TEST_DIR=${{ github.workspace }}/_tests/net6.0/linux-x64 ./test.sh Linux Integration Test
-      #   env:
-      #     Readarr__Postgres__Host: "localhost"
-      #     Readarr__Postgres__Port: "5432"
-      #     Readarr__Postgres__User: "readarr"
-      #     Readarr__Postgres__Password: "readarr"
-      #     OUTPUTFOLDER: _output
-      #     TESTSFOLDER: _tests
-
-      # - name: Publish Integration Test Results (Postgres14)
-      #   uses: actions/upload-artifact@v4
-      #   if: always()
-      #   with:
-      #     name: Integration-Test-Results-Postgres14
-      #     path: "**/TestResult.xml"
-
-      # - name: Stop and Remove PostgreSQL 14
-      #   if: always()
-      #   run: |
-      #     docker stop postgres14 || true
-      #     docker rm postgres14 || true
-
-      # - name: Start PostgreSQL 15 for Integration Tests
-      #   run: |
-      #     docker run -d --name=postgres15 \
-      #     -e POSTGRES_PASSWORD=readarr \
-      #     -e POSTGRES_USER=readarr \
-      #     -p 5432:5432/tcp \
-      #     postgres:15
-
-      # - name: Run Integration Tests (Linux-x64 with Postgres15)
-      #   run: |
-      #     TEST_DIR=${{ github.workspace }}/_tests/net6.0/linux-x64 ./test.sh Linux Integration Test
-      #   env:
-      #     Readarr__Postgres__Host: "localhost"
-      #     Readarr__Postgres__Port: "5432"
-      #     Readarr__Postgres__User: "readarr"
-      #     Readarr__Postgres__Password: "readarr"
-      #     OUTPUTFOLDER: _output
-      #     TESTSFOLDER: _tests
-
-      # - name: Publish Integration Test Results (Postgres15)
-      #   uses: actions/upload-artifact@v4
-      #   if: always()
-      #   with:
-      #     name: Integration-Test-Results-Postgres15
-      #     path: "**/TestResult.xml"
-
-      # - name: Stop and Remove PostgreSQL 15
-      #   if: always()
-      #   run: |
-      #     docker stop postgres15 || true
-      #     docker rm postgres15 || true
+          reporter: dotnet-nunit
+          fail-on-error: false
