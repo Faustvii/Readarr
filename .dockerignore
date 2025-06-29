@@ -1,0 +1,157 @@
+# Git and version control
+.git
+.gitignore
+.gitattributes
+.github
+
+# Documentation
+README.md
+DOCKER.md
+*.md
+docs/
+
+# Build artifacts and temporary files
+_output/
+_artifacts/
+_rawPackage/
+_tests/
+_temp*/
+_start
+_temp_*/
+
+# .NET build outputs
+src/**/[Bb]in/
+src/**/[Oo]bj/
+bin/
+obj/
+output/
+*.pdb
+*.dll
+*.exe
+*.pdb
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.log
+*.vspscc
+*.vssscc
+.builds
+
+# Visual Studio files
+.vs/
+*.suo
+*.user
+*.sln.docstates
+_ReSharper*
+_dotCover*
+src/.cr/
+*.ncrunch*
+.*crunch*.local.xml
+
+# Node.js and frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# Test results
+TestResults/
+[Tt]est[Rr]esult*
+*.Result.xml
+coverage*.xml
+coverage*.json
+*/test-results/*
+
+# IDE and editor files
+.idea/
+*.iml
+*.userprefs
+*workspace.xml
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs and runtime files
+*.log
+*.log.txt
+nzbdrone.log*txt
+UpdateLogs/
+log.txt
+
+# Configuration and cache
+config.xml
+*.test-cache
+*.Cache
+.config/
+.mono
+
+# Package managers
+packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Docker files (to avoid recursive copying)
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# CI/CD files
+azure-pipelines.yml
+.github/
+
+# Development tools
+_NCrunch_*
+_TeamCity*
+_dotTrace*
+
+# Backup files
+*.orig
+*.bak
+*.backup
+
+# Temporary and cache files
+*.tmp
+*.temp
+.cache/
+
+# Database files
+App_Data/*.mdf
+App_Data/*.ldf
+
+# Publish and deployment
+publish/
+*.Publish.xml
+AppPackages/
+csx/
+*.build.csdef
+
+# Build scripts (keep only what's needed)
+- build.sh
+- test.sh
+docker-build.sh
+
+# Keep essential files
+!LICENSE.md
+!entrypoint.sh 
