@@ -1,0 +1,262 @@
+name: Readarr CI & Docker Build
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+    paths-ignore:
+      - '.github/**'
+      - 'src/Readarr.Api.*/openapi.json'
+  pull_request:
+    branches:
+      - develop
+    paths-ignore:
+      - '.github/**'
+      - 'src/NzbDrone.Core/Localization/Core/**'
+      - 'src/Readarr.Api.*/openapi.json'
+
+env:
+  OUTPUT_FOLDER: './_output'
+  ARTIFACTS_FOLDER: './_artifacts'
+  TESTS_FOLDER: './_tests'
+  DOTNET_VERSION: '6.0.x'
+  NODE_VERSION: '20.x'
+
+jobs:
+  build_meta:
+    runs-on: ubuntu-latest
+    outputs:
+      readarr_version: ${{ steps.set_version.outputs.readarr_version }}
+      build_name: ${{ steps.set_version.outputs.build_name }}
+    steps:
+      - name: Set Readarr Version and Build Name
+        id: set_version
+        run: |
+          MAJOR_VERSION="0.4.19"
+          MINOR_VERSION=$((GITHUB_RUN_NUMBER))
+          READARR_VERSION="${MAJOR_VERSION}.${MINOR_VERSION}"
+          BUILD_NAME="${GITHUB_REF_NAME}.${READARR_VERSION}"
+
+          echo "readarr_version=${READARR_VERSION}" >> $GITHUB_OUTPUT
+          echo "build_name=${BUILD_NAME}" >> $GITHUB_OUTPUT
+          echo "Set Readarr Version: ${READARR_VERSION}"
+          echo "Set Build Name: ${BUILD_NAME}"
+
+  build:
+    runs-on: ubuntu-latest
+    needs: build_meta
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+          fetch-depth: 1
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache Yarn Packages
+        id: yarn-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.yarn/cache
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Build Readarr Backend (Linux)
+        run: |
+          ./build.sh --backend --enable-extra-platforms
+        env:
+          DOTNETVERSION: ${{ env.DOTNET_VERSION }}
+          OUTPUTFOLDER: ${{ env.OUTPUT_FOLDER }}
+          TESTSFOLDER: ${{ env.TESTS_FOLDER }}
+
+      - name: Clean up intermediate output
+        run: |
+          find ${{ env.OUTPUT_FOLDER }} -type f ! -path "*/publish/*" -exec rm -rf {} \;
+          find ${{ env.OUTPUT_FOLDER }} -depth -empty -type d -exec rm -r "{}" \;
+          find ${{ env.TESTS_FOLDER }} -type f ! -path "*/publish/*" -exec rm -rf {} \;
+          find ${{ env.TESTS_FOLDER }} -depth -empty -type d -exec rm -r "{}" \;
+
+      - name: Build Readarr Frontend
+        run: |
+          ./build.sh --frontend
+        env:
+          FORCE_COLOR: 0
+          YARN_CACHE_FOLDER: ${{ steps.yarn-cache.outputs.cache-hit == 'true' && '~/.yarn/cache' || '' }}
+
+      - name: Set executable bits for packages
+        run: |
+          find ${{ env.OUTPUT_FOLDER }} -name "Readarr" -exec chmod a+x {} \;
+          find ${{ env.OUTPUT_FOLDER }} -name "Readarr.Update" -exec chmod a+x {} \;
+
+      - name: Create Linux Musl x64 Tarball for Docker
+        run: |
+          tar -czf ${{ github.workspace }}/readarr-linux-musl-x64.tar.gz -C ${{ env.OUTPUT_FOLDER }}/linux-musl-x64/publish .
+
+      - name: Publish Linux Musl x64 Tarball Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: readarr-linux-musl-x64-artifact
+          path: readarr-linux-musl-x64.tar.gz
+
+  test: # Keep this job as is from previous conversation if you want tests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+          fetch-depth: 1
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Make Test Dummy Executable (Unit)
+        run: find ${{ env.TESTS_FOLDER }} -name "Readarr.Test.Dummy" -exec chmod a+x {} \;
+
+      - name: Run Unit Tests (Linux-x64)
+        run: |
+          chmod a+x ${{ env.TESTS_FOLDER }}/test.sh
+          TEST_DIR=${{ github.workspace }}/${{ env.TESTS_FOLDER }} ${{ env.TESTS_FOLDER }}/test.sh Linux Unit Test
+        env:
+          OUTPUTFOLDER: ${{ env.OUTPUT_FOLDER }}
+          TESTSFOLDER: ${{ env.TESTS_FOLDER }}
+
+      - name: Publish Unit Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Unit-Test-Results
+          path: '**/TestResult.xml'
+
+      - name: Start PostgreSQL 14 for Integration Tests
+        run: |
+          docker run -d --name=postgres14 \
+          -e POSTGRES_PASSWORD=readarr \
+          -e POSTGRES_USER=readarr \
+          -p 5432:5432/tcp \
+          postgres:14
+        env:
+          Readarr__Postgres__Host: 'localhost'
+          Readarr__Postgres__Port: '5432'
+          Readarr__Postgres__User: 'readarr'
+          Readarr__Postgres__Password: 'readarr'
+
+      - name: Run Integration Tests (Linux-x64 with Postgres14)
+        run: |
+          chmod a+x ${{ env.TESTS_FOLDER }}/test.sh
+          TEST_DIR=${{ github.workspace }}/${{ env.TESTS_FOLDER }} ${{ env.TESTS_FOLDER }}/test.sh Linux Integration Test
+        env:
+          Readarr__Postgres__Host: 'localhost'
+          Readarr__Postgres__Port: '5432'
+          Readarr__Postgres__User: 'readarr'
+          Readarr__Postgres__Password: 'readarr'
+          OUTPUTFOLDER: ${{ env.OUTPUT_FOLDER }}
+          TESTSFOLDER: ${{ env.TESTS_FOLDER }}
+
+      - name: Publish Integration Test Results (Postgres14)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Integration-Test-Results-Postgres14
+          path: '**/TestResult.xml'
+
+      - name: Start PostgreSQL 15 for Integration Tests
+        run: |
+          docker run -d --name=postgres15 \
+          -e POSTGRES_PASSWORD=readarr \
+          -e POSTGRES_USER=readarr \
+          -p 5432:5432/tcp \
+          postgres:15
+        env:
+          Readarr__Postgres__Host: 'localhost'
+          Readarr__Postgres__Port: '5432'
+          Readarr__Postgres__User: 'readarr'
+          Readarr__Postgres__Password: 'readarr'
+
+      - name: Run Integration Tests (Linux-x64 with Postgres15)
+        run: |
+          chmod a+x ${{ env.TESTS_FOLDER }}/test.sh
+          TEST_DIR=${{ github.workspace }}/${{ env.TESTS_FOLDER }} ${{ env.TESTS_FOLDER }}/test.sh Linux Integration Test
+        env:
+          Readarr__Postgres__Host: 'localhost'
+          Readarr__Postgres__Port: '5432'
+          Readarr__Postgres__User: 'readarr'
+          Readarr__Postgres__Password: 'readarr'
+          OUTPUTFOLDER: ${{ env.OUTPUT_FOLDER }}
+          TESTSFOLDER: ${{ env.TESTS_FOLDER }}
+
+      - name: Publish Integration Test Results (Postgres15)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Integration-Test-Results-Postgres15
+          path: '**/TestResult.xml'
+
+  build_docker_image:
+    runs-on: ubuntu-latest
+    needs: [build, build_meta]
+    permissions:
+      contents: read # Allow read access to the repo
+      packages: write # Allow write access to GitHub Packages
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Readarr Linux Musl x64 Tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: readarr-linux-musl-x64-artifact
+          path: ${{ github.workspace }}/readarr-musl-build/
+
+      - name: Prepare Docker Build Context
+        run: |
+          mkdir -p ${{ github.workspace }}/docker-context
+          tar -xzf ${{ github.workspace }}/readarr-musl-build/*.tar.gz -C ${{ github.workspace }}/docker-context
+          cp ./entrypoint.sh ${{ github.workspace }}/docker-context/
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }} # Uses the GitHub Actions bot username
+          password: ${{ secrets.GITHUB_TOKEN }} # Uses the automatically provided GitHub Token
+
+      - name: Build and Push Docker Image to GHCR
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ github.workspace }}/docker-context
+          file: ${{ github.workspace }}/Dockerfile
+          push: true
+          # Image tags for GHCR follow the format: ghcr.io/<owner>/<repo>:<tag>
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ needs.build_meta.outputs.readarr_version }}
+          platforms: linux/amd64
+          build-args: |
+            VERSION=${{ needs.build_meta.outputs.readarr_version }}
+            VENDOR=${{ github.repository_owner }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
