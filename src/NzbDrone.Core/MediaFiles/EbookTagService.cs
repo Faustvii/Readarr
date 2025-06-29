@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
+using System.Text.RegularExpressions;
 using NLog;
 using NzbDrone.Common.Extensions;
 using NzbDrone.Common.Instrumentation.Extensions;
@@ -41,6 +42,7 @@ namespace NzbDrone.Core.MediaFiles
         private readonly IConfigService _configService;
         private readonly ICalibreProxy _calibre;
         private readonly Logger _logger;
+        private static readonly Regex RegexAsin = new Regex(@"^[a-zA-Z0-9]{10}$", RegexOptions.Compiled | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
 
         public EBookTagService(IAuthorService authorService,
             IMediaFileService mediaFileService,
@@ -56,6 +58,17 @@ namespace NzbDrone.Core.MediaFiles
             _calibre = calibre;
 
             _logger = logger;
+        }
+
+        public static string GetIsbn(IEnumerable<EpubMetadataIdentifier> ids)
+        {
+            var candidates = ids.Select(x => StripIsbn(x?.Identifier))
+                .Where(x => x != null)
+                .OrderByDescending(x => x.Length);
+
+            return candidates.FirstOrDefault(x => x.StartsWith("978"))
+                ?? candidates.FirstOrDefault(x => x.StartsWith("979"))
+                ?? candidates.FirstOrDefault();
         }
 
         public ParsedTrackInfo ReadTags(IFileInfo file)
@@ -165,6 +178,37 @@ namespace NzbDrone.Core.MediaFiles
 
                 _logger.ProgressInfo("All ebook files re-tagged for {0}", author.Name);
             }
+        }
+
+        public string GetAsin(IEnumerable<EpubMetadataIdentifier> ids)
+        {
+            var candidates = ids
+                .Where(x => x != null)
+                .Select(x => x!)
+                .ToList();
+
+            var asinCandidatesByScheme = candidates
+                .Where(x => !string.IsNullOrWhiteSpace(x.Identifier) &&
+                            string.Equals(x.Scheme, "ASIN", StringComparison.OrdinalIgnoreCase))
+                .Select(x => x.Identifier.Trim())
+                .ToList();
+
+            var asin = asinCandidatesByScheme.FirstOrDefault(IsValidAsinFormat);
+            if (asin != null)
+            {
+                return asin;
+            }
+
+            // If no valid ASIN found, look for 10-character alphanumeric strings.
+            var tenCharCandidates = candidates
+                .Select(x => x.Identifier.Trim())
+                .Where(x => x.Length == 10 && IsAlphanumeric(x))
+                .ToList();
+
+            // Prioritize "B0" ASINs if they exist among the 10-char candidates, as they are often for Kindle.
+            // This is a *preference* but not a strict rule for all ASINs.
+            return tenCharCandidates.FirstOrDefault(x => x.StartsWith("B0", StringComparison.OrdinalIgnoreCase))
+                ?? tenCharCandidates.FirstOrDefault();
         }
 
         private void WriteTagsInternal(BookFile file, bool updateCover, bool embedMetadata)
@@ -281,7 +325,7 @@ namespace NzbDrone.Core.MediaFiles
                     _logger.Trace(meta.ToJson());
 
                     result.Isbn = GetIsbn(meta?.Identifiers);
-                    result.Asin = meta?.Identifiers?.FirstOrDefault(x => x.Scheme?.ToLower().Contains("asin") ?? false)?.Identifier;
+                    result.Asin = GetAsin(meta?.Identifiers);
                     result.Language = meta?.Languages?.FirstOrDefault();
                     result.Publisher = meta?.Publishers?.FirstOrDefault();
                     result.Disambiguation = meta?.Description;
@@ -375,18 +419,23 @@ namespace NzbDrone.Core.MediaFiles
             return result;
         }
 
-        public string GetIsbn(IEnumerable<EpubMetadataIdentifier> ids)
+        /// <summary>
+        /// Checks if a string contains only alphanumeric characters.
+        /// </summary>
+        private static bool IsAlphanumeric(string s)
         {
-            var candidates = ids.Select(x => StripIsbn(x?.Identifier))
-                .Where(x => x != null)
-                .OrderByDescending(x => x.Length);
+            foreach (var c in s)
+            {
+                if (!char.IsLetterOrDigit(c))
+                {
+                    return false;
+                }
+            }
 
-            return candidates.FirstOrDefault(x => x.StartsWith("978"))
-                ?? candidates.FirstOrDefault(x => x.StartsWith("979"))
-                ?? candidates.FirstOrDefault();
+            return true;
         }
 
-        private string GetIsbnChars(string input)
+        private static string GetIsbnChars(string input)
         {
             if (input == null)
             {
@@ -396,7 +445,7 @@ namespace NzbDrone.Core.MediaFiles
             return new string(input.Where(c => char.IsDigit(c) || c == 'X' || c == 'x').ToArray());
         }
 
-        private string StripIsbn(string input)
+        private static string StripIsbn(string input)
         {
             var isbn = GetIsbnChars(input);
 
@@ -456,6 +505,21 @@ namespace NzbDrone.Core.MediaFiles
         private static bool ValidateIsbn13(string isbn)
         {
             return ulong.TryParse(isbn, out _) && isbn[12] == Isbn13Checksum(isbn);
+        }
+
+        /// <summary>
+        /// Checks if a string is exactly 10 characters long and contains only letters and numbers.
+        /// </summary>
+        /// <param name="s">The string to check.</param>
+        /// <returns>True if the string is a valid ASIN format, false otherwise.</returns>
+        private bool IsValidAsinFormat(string s)
+        {
+            if (string.IsNullOrEmpty(s) || s.Length != 10)
+            {
+                return false;
+            }
+
+            return RegexAsin.IsMatch(s);
         }
     }
 }
