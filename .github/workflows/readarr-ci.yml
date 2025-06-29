@@ -90,6 +90,15 @@ jobs:
           FORCE_COLOR: 0
           YARN_CACHE_FOLDER: ${{ steps.yarn-cache.outputs.cache-hit == 'true' && '~/.yarn/cache' || '' }}
 
+      - name: Prepare Integration Test Environment
+        run: |
+          # Create the bin directory where integration tests expect the Readarr executable
+          mkdir -p _tests/bin
+          # Copy the Readarr executable from the build output to where tests expect it
+          cp _output/net6.0/linux-x64/publish/Readarr _tests/bin/
+          # Make it executable
+          chmod +x _tests/bin/Readarr
+
       - name: Make Test Dummy Executable (Unit)
         run: find _tests -name "Readarr.Test.Dummy" -exec chmod a+x {} \;
 
@@ -217,7 +226,7 @@ jobs:
           build-args: |
             VERSION=${{ needs.build_meta.outputs.readarr_version }}
             VENDOR=${{ github.repository_owner }}
-            BRANCH=${{ github.ref_name }}
+            BRANCH=${{ needs.build_meta.outputs.build_name }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.version=${{ needs.build_meta.outputs.readarr_version }}
