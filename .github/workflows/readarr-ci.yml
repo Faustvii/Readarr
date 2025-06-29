@@ -19,7 +19,7 @@ on:
 env:
   DOTNET_VERSION: "6.0.x"
   NODE_VERSION: "20.x"
-  MAJAOR_VERSION: "0.4.19"
+  MAJOR_VERSION: "0.4.19"
 
 jobs:
   build_meta:
@@ -31,7 +31,7 @@ jobs:
       - name: Set Readarr Version and Build Name
         id: set_version
         run: |
-          MAJOR_VERSION="${{ env.MAJAOR_VERSION }}"
+          MAJOR_VERSION="${{ env.MAJOR_VERSION }}"
           MINOR_VERSION=$((GITHUB_RUN_NUMBER))
           READARR_VERSION="${MAJOR_VERSION}.${MINOR_VERSION}"
 
