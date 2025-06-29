@@ -4,12 +4,12 @@
 # Consider mcr.microsoft.com/dotnet/runtime-deps:6.0-alpine if you want official .NET runtime dependencies
 FROM docker.io/library/alpine:3.22
 
-ARG TARGETARCH # Passed by buildx, e.g., amd64, arm64
+ARG TARGETARCH
 ARG VENDOR
 ARG VERSION
 
 ENV COMPlus_EnableDiagnostics=0 \
-    READARR__UPDATE__BRANCH=develop # This might be dynamic if you intend to update it
+    READARR__UPDATE__BRANCH=develop
 
 USER root
 WORKDIR /app
