@@ -74,7 +74,7 @@ jobs:
 
       - name: Build Readarr Backend (Linux)
         run: |
-          ./build.sh --backend --enable-extra-platforms
+          ./build.sh --backend
         env:
           DOTNETVERSION: ${{ env.DOTNET_VERSION }}
           OUTPUTFOLDER: ${{ env.OUTPUT_FOLDER }}
