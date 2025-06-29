@@ -376,7 +376,6 @@ then
     Build
     if [[ -z "$RID" || -z "$FRAMEWORK" ]];
     then
-        PackageTests "net6.0" "linux-x64"
         PackageTests "net6.0" "linux-musl-x64"
         if [ "$ENABLE_EXTRA_PLATFORMS" = "YES" ];
         then
@@ -409,7 +408,6 @@ then
 
     if [[ -z "$RID" || -z "$FRAMEWORK" ]];
     then
-        Package "net6.0" "linux-x64"
         Package "net6.0" "linux-musl-x64"
         if [ "$ENABLE_EXTRA_PLATFORMS" = "YES" ];
         then

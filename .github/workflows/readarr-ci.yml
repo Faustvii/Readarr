@@ -38,11 +38,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Check Yarn Cache Location
-        run: |
-          yarn config get cache-folder
-          echo "Yarn cache folder: $(yarn config get cache-folder)"
-
       - name: Cache Yarn Packages
         id: yarn-cache
         uses: actions/cache@v4
@@ -74,7 +69,7 @@ jobs:
       - name: Make Test Dummy Executable (Unit)
         run: find _tests -name "Readarr.Test.Dummy" -exec chmod a+x {} \;
 
-      - name: Run Unit Tests (Linux-x64)
+      - name: Run Unit Tests (linux-x64)
         run: |
           ./test.sh Linux Unit Test
         env:
