@@ -21,6 +21,8 @@
         "./Readarr.Api": "${workspaceFolder}/src/Readarr.Api",
         "./Readarr.Automation.Test": "${workspaceFolder}/src/NzbDrone.Automation.Test",
         "./Readarr.Api.V1": "${workspaceFolder}/src/Readarr.Api.V1",
+        "./Readarr.Host": "${workspaceFolder}/src/NzbDrone.Host",
+        "./Readarr.Common": "${workspaceFolder}/src/NzbDrone.Common",
       }
     },
     {
