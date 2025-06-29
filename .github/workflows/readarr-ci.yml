@@ -36,7 +36,19 @@ jobs:
           MAJOR_VERSION="0.4.19"
           MINOR_VERSION=$((GITHUB_RUN_NUMBER))
           READARR_VERSION="${MAJOR_VERSION}.${MINOR_VERSION}"
-          BUILD_NAME="${GITHUB_REF_NAME}.${READARR_VERSION}"
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # For pull requests, use "pr-<PR_NUMBER>" for a clear identifier
+            BUILD_IDENTIFIER="pr-${{ github.event.pull_request.number }}"
+          else
+            # For push events, use the branch name (e.g., 'develop', 'master')
+            # and sanitize it for use in names/tags (replace slashes, lowercase)
+            RAW_BRANCH_NAME="${{ github.ref_name }}"
+            # Replace slashes with hyphens, convert to lowercase for consistency
+            BUILD_IDENTIFIER=$(echo "$RAW_BRANCH_NAME" | sed 's|/|-|g' | tr '[:upper:]' '[:lower:]')
+          fi
+
+          BUILD_NAME="${BUILD_IDENTIFIER}.${READARR_VERSION}"
 
           echo "readarr_version=${READARR_VERSION}" >> $GITHUB_OUTPUT
           echo "build_name=${BUILD_NAME}" >> $GITHUB_OUTPUT
@@ -80,12 +92,24 @@ jobs:
           OUTPUTFOLDER: ${{ env.OUTPUT_FOLDER }}
           TESTSFOLDER: ${{ env.TESTS_FOLDER }}
 
+      - name: Debug Output Folder Contents
+        run: |
+          echo "--- Listing contents of ${{ env.OUTPUT_FOLDER }} ---"
+          ls -lR ${{ env.OUTPUT_FOLDER }}
+          echo "---------------------------------------------------"
+
       - name: Clean up intermediate output
         run: |
           find ${{ env.OUTPUT_FOLDER }} -type f ! -path "*/publish/*" -exec rm -rf {} \;
           find ${{ env.OUTPUT_FOLDER }} -depth -empty -type d -exec rm -r "{}" \;
           find ${{ env.TESTS_FOLDER }} -type f ! -path "*/publish/*" -exec rm -rf {} \;
           find ${{ env.TESTS_FOLDER }} -depth -empty -type d -exec rm -r "{}" \;
+
+      - name: Debug Output After Cleanup Folder Contents
+        run: |
+          echo "--- Listing contents of ${{ env.OUTPUT_FOLDER }} ---"
+          ls -lR ${{ env.OUTPUT_FOLDER }}
+          echo "---------------------------------------------------"
 
       - name: Build Readarr Frontend
         run: |
