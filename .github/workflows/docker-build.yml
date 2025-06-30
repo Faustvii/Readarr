@@ -122,6 +122,10 @@ jobs:
         run: |
           tar -czf Readarr.develop.${{ needs.build_meta.outputs.readarr_version }}.linux-musl-x64.tar.gz -C _artifacts/linux-musl-x64/net6.0 Readarr
 
+      - name: Compute SHA256 hash
+        run: |
+          sha256sum Readarr.develop.${{ needs.build_meta.outputs.readarr_version }}.linux-musl-x64.tar.gz > Readarr.develop.${{ needs.build_meta.outputs.readarr_version }}.linux-musl-x64.tar.gz.sha256
+
       - name: Get Release
         id: get_release
         run: |
@@ -129,7 +133,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Release Asset
+      - name: Upload Release Asset (tarball)
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -138,3 +142,13 @@ jobs:
           asset_path: Readarr.develop.${{ needs.build_meta.outputs.readarr_version }}.linux-musl-x64.tar.gz
           asset_name: Readarr.develop.${{ needs.build_meta.outputs.readarr_version }}.linux-musl-x64.tar.gz
           asset_content_type: application/gzip
+
+      - name: Upload Release Asset (sha256)
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: Readarr.develop.${{ needs.build_meta.outputs.readarr_version }}.linux-musl-x64.tar.gz.sha256
+          asset_name: Readarr.develop.${{ needs.build_meta.outputs.readarr_version }}.linux-musl-x64.tar.gz.sha256
+          asset_content_type: text/plain
