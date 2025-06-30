@@ -94,3 +94,47 @@ jobs:
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.version=${{ needs.build_meta.outputs.readarr_version }}
             org.opencontainers.image.revision=${{ github.sha }}
+
+  build_and_upload_release_assets:
+    runs-on: ubuntu-latest
+    needs: build_meta
+    if: needs.build_meta.outputs.should_release == 'true'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build Release Artifacts
+        run: |
+          ./build.sh --packages
+        env:
+          READARRVERSION: ${{ needs.build_meta.outputs.readarr_version }}
+
+      - name: Create linux-musl-x64 tarball
+        run: |
+          tar -czf Readarr.develop.${{ needs.build_meta.outputs.readarr_version }}.linux-musl-x64.tar.gz -C _artifacts/linux-musl-x64/net6.0 Readarr
+
+      - name: Get Release
+        id: get_release
+        run: |
+          echo "upload_url=$(gh release view v${{ needs.build_meta.outputs.readarr_version }} --json uploadUrl --jq .uploadUrl)" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: Readarr.develop.${{ needs.build_meta.outputs.readarr_version }}.linux-musl-x64.tar.gz
+          asset_name: Readarr.develop.${{ needs.build_meta.outputs.readarr_version }}.linux-musl-x64.tar.gz
+          asset_content_type: application/gzip
