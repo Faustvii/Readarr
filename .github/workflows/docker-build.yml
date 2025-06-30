@@ -7,6 +7,7 @@ on:
     paths-ignore:
       - ".github/**"
       - "src/Readarr.Api.*/openapi.json"
+  workflow_dispatch:
 
 env:
   DOTNET_VERSION: "6.0.x"
@@ -114,7 +115,7 @@ jobs:
 
       - name: Build Release Artifacts
         run: |
-          ./build.sh --packages
+          ./build.sh --backend --frontend --packages
         env:
           READARRVERSION: ${{ needs.build_meta.outputs.readarr_version }}
 
