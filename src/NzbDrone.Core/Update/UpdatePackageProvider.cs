@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NzbDrone.Core.Configuration;
 using Octokit;
@@ -52,7 +53,14 @@ namespace NzbDrone.Core.Update
             if (shaAsset != null)
             {
                 // Download the .sha256 file and parse the hash
-                var shaContent = _githubClient.Connection.Get<string>(new Uri(shaAsset.BrowserDownloadUrl), TimeSpan.FromSeconds(15)).GetAwaiter().GetResult().Body;
+                var assetApiUrl = new Uri(shaAsset.BrowserDownloadUrl);
+                var responseRaw = _githubClient.Connection.Get<object>(assetApiUrl, new Dictionary<string, string>(), "application/octet-stream").GetAwaiter().GetResult();
+                var shaContent = string.Empty;
+                using (var fileStream = new StreamReader(responseRaw.HttpResponse.Body as Stream))
+                {
+                    shaContent = fileStream.ReadToEnd();
+                }
+
                 if (!string.IsNullOrWhiteSpace(shaContent))
                 {
                     hash = shaContent.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
