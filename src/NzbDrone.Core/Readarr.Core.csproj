@@ -7,6 +7,7 @@
     <PackageReference Include="Diacritical.Net" />
     <PackageReference Include="LazyCache" />
     <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Octokit" />
     <PackageReference Include="Polly" />
     <PackageReference Include="System.Text.Json" />
     <PackageReference Include="System.Text.Encoding.CodePages" />
