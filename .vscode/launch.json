@@ -23,6 +23,7 @@
         "./Readarr.Api.V1": "${workspaceFolder}/src/Readarr.Api.V1",
         "./Readarr.Host": "${workspaceFolder}/src/NzbDrone.Host",
         "./Readarr.Common": "${workspaceFolder}/src/NzbDrone.Common",
+        "./Readarr.Core.Test": "${workspaceFolder}/src/NzbDrone.Core.Test",
       }
     },
     {
