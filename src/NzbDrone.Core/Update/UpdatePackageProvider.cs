@@ -28,8 +28,9 @@ namespace NzbDrone.Core.Update
 
         public UpdatePackage GetLatestUpdate(string branch, Version currentVersion)
         {
-            var owner = _deploymentInfoProvider.PackageAuthor ?? Owner;
-            var releases = _githubClient.Repository.Release.GetAll(owner, Repo).GetAwaiter().GetResult();
+            var owner = _deploymentInfoProvider.PackageOwner ?? Owner;
+            var repo = _deploymentInfoProvider.PackageRepo ?? Repo;
+            var releases = _githubClient.Repository.Release.GetAll(owner, repo).GetAwaiter().GetResult();
             var latestRelease = releases
                 .Where(r => !r.Draft && !r.Prerelease)
                 .Select(r => new { Release = r, Version = TryParseVersion(r.TagName) })

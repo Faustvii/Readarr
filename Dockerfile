@@ -38,6 +38,8 @@ ARG TARGETARCH
 ARG VENDOR
 ARG VERSION
 ARG BRANCH=develop
+ARG PackageOwner=faustvii
+ARG PackageRepo=readarr
 
 ENV COMPlus_EnableDiagnostics=0 \
     READARR__UPDATE__BRANCH=${BRANCH}
@@ -66,7 +68,7 @@ COPY --from=builder /src/_artifacts/linux-musl-x64/net6.0/Readarr /app/bin/
 RUN rm -rf /app/bin/Readarr.Update
 
 # Create package_info dynamically
-RUN printf "UpdateMethod=docker\nBranch=%s\nPackageVersion=%s\nPackageAuthor=[%s](https://github.com/%s)\n" "${READARR__UPDATE__BRANCH}" "${VERSION}" "${VENDOR}" "${VENDOR}" > /app/package_info
+RUN printf "UpdateMethod=docker\nBranch=%s\nPackageVersion=%s\nPackageAuthor=[%s](https://github.com/%s)\nPackageOwner=%s\nPackageRepo=%s\n" "${READARR__UPDATE__BRANCH}" "${VERSION}" "${VENDOR}" "${VENDOR}" "${PackageOwner}" "${PackageRepo}" > /app/package_info
 
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
