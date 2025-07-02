@@ -16,5 +16,6 @@
     "vscode": {
       "extensions": ["esbenp.prettier-vscode"]
     }
-  }
+  },
+  "mounts": [{ "source": "./readarr-config", "target": "/home/vscode/.config/Readarr", "type": "bind" }]
 }

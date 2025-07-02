@@ -153,3 +153,4 @@ _temp_*/**/*
 
 # API doc generation
 .config/
+readarr-config
