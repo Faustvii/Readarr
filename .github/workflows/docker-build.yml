@@ -170,6 +170,13 @@ jobs:
       packages: write
 
     steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Generate docker image attestation
         uses: actions/attest-build-provenance@v2
         with:
