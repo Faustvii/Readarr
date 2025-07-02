@@ -107,7 +107,15 @@ namespace NzbDrone.Core.Update
 
         private static Version TryParseVersion(string versionString)
         {
-            return Version.TryParse(versionString.TrimStart('v'), out var version) ? version : null;
+            var v = versionString.TrimStart('v');
+            var parts = v.Split('.');
+            while (parts.Length < 4)
+            {
+                v += ".0";
+                parts = v.Split('.');
+            }
+
+            return Version.TryParse(v, out var version) ? version : null;
         }
 
         private static UpdateChanges ParseReleaseNotes(string body)
