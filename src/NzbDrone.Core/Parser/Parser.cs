@@ -538,8 +538,26 @@ namespace NzbDrone.Core.Parser
             return null;
         }
 
+        /// <summary>
+        /// Splits a book title into main title and subtitle components, handling common formatting patterns.
+        /// Removes author prefixes and splits on colons or parentheses to separate series/main titles from subtitles.
+        /// </summary>
+        /// <param name="book">The full book title to split</param>
+        /// <param name="author">The author name to strip from the beginning if present</param>
+        /// <returns>A tuple containing (mainTitle, subtitle) where subtitle is empty if no split point found</returns>
+        /// <example>
+        /// "Beneath the Dragoneye Moons: Return to Remus" → ("Beneath the Dragoneye Moons", "Return to Remus")
+        /// "Book Title (Special Edition)" → ("Book Title", "Special Edition")
+        /// "Tom Clancy: Ghost Protocol" → ("Ghost Protocol", "")
+        /// "Simple Title" → ("Simple Title", "")
+        /// </example>
         public static (string, string) SplitBookTitle(this string book, string author)
         {
+            if (book is null)
+            {
+                return (string.Empty, string.Empty);
+            }
+
             // Strip author from title, eg Tom Clancy: Ghost Protocol
             if (book.StartsWith($"{author}:"))
             {

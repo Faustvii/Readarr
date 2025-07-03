@@ -44,6 +44,8 @@ namespace NzbDrone.Core.MediaFiles
         private readonly Logger _logger;
         private static readonly Regex RegexAsin = new Regex(@"^[a-zA-Z0-9]{10}$", RegexOptions.Compiled | RegexOptions.IgnoreCase, TimeSpan.FromSeconds(1));
 
+        private static readonly HashSet<string> AsinSchemes = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MOBI-ASIN", "ASIN", "amazon" };
+
         public EBookTagService(IAuthorService authorService,
             IMediaFileService mediaFileService,
             IRootFolderService rootFolderService,
@@ -189,9 +191,8 @@ namespace NzbDrone.Core.MediaFiles
 
             var asinCandidatesByScheme = candidates
                 .Where(x => !string.IsNullOrWhiteSpace(x.Identifier) &&
-                            (string.Equals(x.Scheme, "MOBI-ASIN", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(x.Scheme, "ASIN", StringComparison.OrdinalIgnoreCase)))
-                .Select(x => x.Identifier.Trim())
+                            AsinSchemes.Contains(x.Scheme))
+                .Select(x => StripIdentifierPrefix(x.Identifier.Trim()))
                 .ToList();
 
             var asin = asinCandidatesByScheme.FirstOrDefault(IsValidAsinFormat);
@@ -202,7 +203,7 @@ namespace NzbDrone.Core.MediaFiles
 
             // If no valid ASIN found, look for 10-character alphanumeric strings.
             var tenCharCandidates = candidates
-                .Select(x => x.Identifier.Trim())
+                .Select(x => StripIdentifierPrefix(x.Identifier.Trim()))
                 .Where(x => x.Length == 10 && IsAlphanumeric(x))
                 .ToList();
 
@@ -327,7 +328,7 @@ namespace NzbDrone.Core.MediaFiles
 
                     result.Isbn = GetIsbn(meta?.Identifiers);
                     result.Asin = GetAsin(meta?.Identifiers);
-                    result.GoodreadsId = meta?.Identifiers?.FirstOrDefault(x => "goodreads".Equals(x.Scheme, StringComparison.OrdinalIgnoreCase))?.Identifier;
+                    result.GoodreadsId = StripIdentifierPrefix(meta?.Identifiers?.FirstOrDefault(x => "goodreads".Equals(x.Scheme, StringComparison.OrdinalIgnoreCase))?.Identifier);
                     result.Language = meta?.Languages?.FirstOrDefault();
                     result.Publisher = meta?.Publishers?.FirstOrDefault();
                     result.Disambiguation = meta?.Description;
@@ -421,6 +422,33 @@ namespace NzbDrone.Core.MediaFiles
             return result;
         }
 
+        private static string StripIdentifierPrefix(string identifier)
+        {
+            // Remove common prefixes like "mobi-asin:", "goodreads:", "asin:"
+            if (identifier == null)
+            {
+                return null;
+            }
+
+            identifier = identifier.Trim();
+            if (identifier.StartsWith("mobi-asin:", StringComparison.OrdinalIgnoreCase))
+            {
+                return identifier["mobi-asin:".Length..];
+            }
+
+            if (identifier.StartsWith("goodreads:", StringComparison.OrdinalIgnoreCase))
+            {
+                return identifier["goodreads:".Length..];
+            }
+
+            if (identifier.StartsWith("asin:", StringComparison.OrdinalIgnoreCase))
+            {
+                return identifier["asin:".Length..];
+            }
+
+            return identifier;
+        }
+
         /// <summary>
         /// Checks if a string contains only alphanumeric characters.
         /// </summary>
@@ -449,7 +477,7 @@ namespace NzbDrone.Core.MediaFiles
 
         private static string StripIsbn(string input)
         {
-            var isbn = GetIsbnChars(input);
+            var isbn = GetIsbnChars(StripIdentifierPrefix(input));
 
             if (isbn == null)
             {
