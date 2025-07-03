@@ -189,7 +189,8 @@ namespace NzbDrone.Core.MediaFiles
 
             var asinCandidatesByScheme = candidates
                 .Where(x => !string.IsNullOrWhiteSpace(x.Identifier) &&
-                            string.Equals(x.Scheme, "ASIN", StringComparison.OrdinalIgnoreCase))
+                            (string.Equals(x.Scheme, "MOBI-ASIN", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(x.Scheme, "ASIN", StringComparison.OrdinalIgnoreCase)))
                 .Select(x => x.Identifier.Trim())
                 .ToList();
 
