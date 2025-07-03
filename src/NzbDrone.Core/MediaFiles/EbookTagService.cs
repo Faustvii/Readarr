@@ -326,6 +326,7 @@ namespace NzbDrone.Core.MediaFiles
 
                     result.Isbn = GetIsbn(meta?.Identifiers);
                     result.Asin = GetAsin(meta?.Identifiers);
+                    result.GoodreadsId = meta?.Identifiers?.FirstOrDefault(x => "goodreads".Equals(x.Scheme, StringComparison.OrdinalIgnoreCase))?.Identifier;
                     result.Language = meta?.Languages?.FirstOrDefault();
                     result.Publisher = meta?.Publishers?.FirstOrDefault();
                     result.Disambiguation = meta?.Description;
