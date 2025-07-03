@@ -20,7 +20,7 @@ namespace NzbDrone.Core.MediaFiles.BookImport.Identification
 
         private static readonly RegexReplace StripSeriesRegex = new RegexReplace(@"\([^\)].+?\)$", string.Empty, RegexOptions.Compiled);
 
-        private static readonly RegexReplace CleanTitleCruft = new RegexReplace(@"\((?:unabridged)\)", string.Empty, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly RegexReplace CleanTitleCruft = new RegexReplace(@"\((?:unabridged)\)|,?\s*(?:\([^)]*edition[^)]*\)|(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|\d+(?:st|nd|rd|th)?)\s+edition)$", string.Empty, RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private static readonly List<string> EbookFormats = new List<string> { "Kindle Edition", "Nook", "ebook" };
 
