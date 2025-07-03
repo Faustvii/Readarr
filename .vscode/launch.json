@@ -24,6 +24,7 @@
         "./Readarr.Host": "${workspaceFolder}/src/NzbDrone.Host",
         "./Readarr.Common": "${workspaceFolder}/src/NzbDrone.Common",
         "./Readarr.Core.Test": "${workspaceFolder}/src/NzbDrone.Core.Test",
+        "./Readarr.Http": "${workspaceFolder}/src/Readarr.Http",
       }
     },
     {
