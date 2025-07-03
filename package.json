@@ -144,5 +144,8 @@
   "volta": {
     "node": "20.11.1",
     "yarn": "1.22.19"
+  },
+  "resolutions": {
+    "@babel/runtime": "7.26.10"
   }
 }
