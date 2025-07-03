@@ -44,29 +44,32 @@ namespace NzbDrone.Core.MediaFiles.BookImport.Identification
 
             var title = localTracks.MostCommon(x => x.FileTrackInfo.BookTitle) ?? "";
             var titleOptions = new List<string> { edition.Title };
-            if (titleOptions[0].Contains("#"))
+            if (titleOptions[0].Contains('#', StringComparison.OrdinalIgnoreCase))
             {
                 titleOptions.Add(StripSeriesRegex.Replace(titleOptions[0]));
             }
 
-            var (maintitle, _) = edition.Title.SplitBookTitle(edition.Book.Value.AuthorMetadata.Value.Name);
-            if (!titleOptions.Contains(maintitle))
-            {
-                titleOptions.Add(maintitle);
-            }
-
+            var seriesNames = new List<string>();
             if (edition.Book.Value.SeriesLinks?.Value?.Any() ?? false)
             {
                 foreach (var l in edition.Book.Value.SeriesLinks.Value)
                 {
                     if (l.Series?.Value?.Title?.IsNotNullOrWhiteSpace() ?? false)
                     {
+                        seriesNames.Add(l.Series.Value.Title);
                         titleOptions.Add($"{l.Series.Value.Title} {l.Position} {edition.Title}");
                         titleOptions.Add($"{l.Series.Value.Title} Book {l.Position} {edition.Title}");
                         titleOptions.Add($"{edition.Title} {l.Series.Value.Title} {l.Position}");
                         titleOptions.Add($"{edition.Title} {l.Series.Value.Title} Book {l.Position}");
                     }
                 }
+            }
+
+            // Use series-aware title splitting
+            var (maintitle, _) = SeriesAwareSplitBookTitle(edition.Title, edition.Book.Value.AuthorMetadata.Value.Name, seriesNames);
+            if (!titleOptions.Contains(maintitle))
+            {
+                titleOptions.Add(maintitle);
             }
 
             var fileTitles = new[] { title, CleanTitleCruft.Replace(title) }.Distinct().ToList();
@@ -165,6 +168,11 @@ namespace NzbDrone.Core.MediaFiles.BookImport.Identification
                 {
                     // audio books should prefer audio formats
                     dist.AddBool("audio_format", !AudiobookFormats.Contains(edition.Format));
+                    Logger.Trace($"audio_format: {edition.Format} - {!AudiobookFormats.Contains(edition.Format)}; {dist.NormalizedDistance()}");
+
+                    // audio books should not match ebook entries
+                    dist.AddBool("wrong_format", EbookFormats.Contains(edition.Format));
+                    Logger.Trace($"wrong_format: {edition.Format} - {EbookFormats.Contains(edition.Format)}; {dist.NormalizedDistance()}");
                 }
             }
 
@@ -239,6 +247,47 @@ namespace NzbDrone.Core.MediaFiles.BookImport.Identification
             }
 
             return new List<string>();
+        }
+
+        /// <summary>
+        /// Series-aware version of SplitBookTitle that can identify series names and better split titles
+        /// </summary>
+        private static (string, string) SeriesAwareSplitBookTitle(string book, string author, List<string> seriesNames)
+        {
+            // First try the standard split
+            var (standardMain, standardSub) = book.SplitBookTitle(author);
+
+            // If we don't have series names, return the standard split
+            if (!seriesNames.Any())
+            {
+                return (standardMain, standardSub);
+            }
+
+            // Check if the title starts with any known series name
+            foreach (var seriesName in seriesNames)
+            {
+                // Check for "Series Name: Book Title" pattern
+                if (book.StartsWith($"{seriesName}:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var bookTitle = book.Substring(seriesName.Length + 1).Trim();
+                    return (bookTitle, seriesName);
+                }
+
+                // Check for "Series Name Book Title" pattern (no colon)
+                if (book.StartsWith($"{seriesName} ", StringComparison.OrdinalIgnoreCase))
+                {
+                    var bookTitle = book.Substring(seriesName.Length).Trim();
+
+                    // Make sure there's actually content after the series name
+                    if (bookTitle.Length > 0)
+                    {
+                        return (bookTitle, seriesName);
+                    }
+                }
+            }
+
+            // If no series match found, return the standard split
+            return (standardMain, standardSub);
         }
     }
 }
