@@ -22,6 +22,7 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" />
     <PackageReference Include="System.ServiceProcess.ServiceController" />
     <PackageReference Include="Microsoft.Win32.Registry" />
+    <PackageReference Include="Octokit" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="EnsureThat\Resources\ExceptionMessages.Designer.cs">

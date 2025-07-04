@@ -20,10 +20,10 @@ namespace NzbDrone.Core.Update
         private readonly IGitHubClient _githubClient;
         private readonly IDeploymentInfoProvider _deploymentInfoProvider;
 
-        public UpdatePackageProvider(IDeploymentInfoProvider deploymentInfoProvider)
+        public UpdatePackageProvider(IDeploymentInfoProvider deploymentInfoProvider, IGitHubClient githubClient)
         {
             _deploymentInfoProvider = deploymentInfoProvider;
-            _githubClient = new GitHubClient(new ProductHeaderValue("ForkReadarr"));
+            _githubClient = githubClient;
         }
 
         public UpdatePackage GetLatestUpdate(string branch, Version currentVersion)
