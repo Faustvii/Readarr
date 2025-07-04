@@ -84,4 +84,4 @@ jobs:
           name: Unit Test Results
           path: "**/TestResult.xml"
           reporter: dotnet-nunit
-          fail-on-error: false
+          fail-on-error: true
