@@ -101,7 +101,9 @@ namespace NzbDrone.Core.Books
             var scoringFunctions = new List<Tuple<Func<Author, string, double>, string>>
             {
                 tc((a, t) => a.Metadata.Value.Name.FuzzyMatch(t), title),
-                tc((a, t) => a.Metadata.Value.NameLastFirst.FuzzyMatch(t), title)
+                tc((a, t) => a.Metadata.Value.NameLastFirst.FuzzyMatch(t), title),
+                tc((a, t) => a.Metadata.Value.Name.CleanAuthorName().FuzzyMatch(t), cleanTitle),
+                tc((a, t) => a.Metadata.Value.NameLastFirst.CleanAuthorName().FuzzyMatch(t), cleanTitle)
             };
 
             return scoringFunctions;
@@ -109,6 +111,11 @@ namespace NzbDrone.Core.Books
 
         public Author FindByNameInexact(string title)
         {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return null;
+            }
+
             var authors = GetAllAuthors();
 
             foreach (var func in AuthorScoringFunctions(title, title.CleanAuthorName()))
@@ -176,7 +183,7 @@ namespace NzbDrone.Core.Books
                 .ToList();
 
             return sortedAuthors.TakeWhile((x, i) => i == 0 || sortedAuthors[i - 1].MatchProb - x.MatchProb < fuzzGap)
-                .TakeWhile((x, i) => x.MatchProb > fuzzThreshold || (i > 0 && sortedAuthors[i - 1].MatchProb > fuzzThreshold))
+                .TakeWhile((x, i) => x.MatchProb >= fuzzThreshold || (i > 0 && sortedAuthors[i - 1].MatchProb >= fuzzThreshold))
                 .Select(x => x.Author)
                 .ToList();
         }
