@@ -170,13 +170,37 @@ namespace NzbDrone.Common.Extensions
             {
                 return 0;
             }
-            else if (a.Contains(" ") && b.Contains(" "))
+            else if (a.EqualsIgnoreCase(b))
+            {
+                return 1.0;
+            }
+            else if (a.Contains(' ', StringComparison.OrdinalIgnoreCase) && b.Contains(' ', StringComparison.OrdinalIgnoreCase))
             {
                 var partsA = a.Split(' ');
                 var partsB = b.Split(' ');
 
                 var coef = (FuzzyMatchComponents(partsA, partsB) + FuzzyMatchComponents(partsB, partsA)) / (partsA.Length + partsB.Length);
+
                 return Math.Max(coef, LevenshteinCoefficient(a, b));
+            }
+            else if (a.Contains(b, StringComparison.OrdinalIgnoreCase) || b.Contains(a, StringComparison.OrdinalIgnoreCase))
+            {
+                var coef = LevenshteinCoefficient(a, b);
+                if (a.Contains(' ', StringComparison.OrdinalIgnoreCase) ^ b.Contains(' ', StringComparison.OrdinalIgnoreCase))
+                {
+                    return coef;
+                }
+
+                if (a.StartsWith(b, StringComparison.OrdinalIgnoreCase)
+                    || b.StartsWith(a, StringComparison.OrdinalIgnoreCase)
+                    || a.EndsWith(b, StringComparison.OrdinalIgnoreCase)
+                    || b.EndsWith(a, StringComparison.OrdinalIgnoreCase))
+                {
+                    // 0.8 is minimum threshold for a match
+                    return Math.Min(1.0, 0.8 + coef);
+                }
+
+                return coef;
             }
             else
             {

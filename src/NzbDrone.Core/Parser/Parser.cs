@@ -130,6 +130,12 @@ namespace NzbDrone.Core.Parser
             // Hypen with no or more spaces between author/book/year
             new Regex(@"^(?:(?<author>.+?)(?:-))(?<releaseyear>\d{4})(?:-)(?<book>[^-]+)",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+            // Handles cases where it's unclear which part is the author or the book title,
+            // such as "Stephen King - The Shining" or "The Shining - Stephen King".
+            // This should be used as a last resort if other regexes fail.
+            new Regex(@"^(?<book>.+\s*?-\s*?.+)$",
+                RegexOptions.IgnoreCase | RegexOptions.Compiled),
         };
 
         private static readonly Regex[] RejectHashedReleasesRegex = new Regex[]
