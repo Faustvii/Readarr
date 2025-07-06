@@ -52,7 +52,6 @@ namespace NzbDrone.Core.Download.TrackedDownloads
             _formatCalculator = formatCalculator;
             _eventAggregator = eventAggregator;
             _downloadHistoryService = downloadHistoryService;
-            _cache = cacheManager.GetCache<TrackedDownload>(GetType());
             _logger = logger;
         }
 
