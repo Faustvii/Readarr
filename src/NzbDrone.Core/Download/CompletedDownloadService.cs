@@ -133,7 +133,7 @@ namespace NzbDrone.Core.Download
                 var importedAuthorId = importResults.Where(x => x.Result == ImportResultType.Imported)
                     .Select(c => c.ImportDecision.Item.Author.Id)
                     .MostCommon();
-                _eventAggregator.PublishEvent(new DownloadCompletedEvent(trackedDownload, trackedDownload.RemoteBook?.Author.Id ?? importedAuthorId));
+                _eventAggregator.PublishEvent(new DownloadCompletedEvent(trackedDownload, trackedDownload.RemoteBook?.Author?.Id ?? importedAuthorId));
                 return true;
             }
 
