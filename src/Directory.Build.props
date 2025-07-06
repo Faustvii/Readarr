@@ -137,6 +137,18 @@
     <PackageReference Include="coverlet.collector" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <EmbedAllSources>true</EmbedAllSources>
+    <SourceLinkCreate>true</SourceLinkCreate>
+    <AdditionalCscArguments>$(AdditionalCscArguments) /pathmap:$(PathMap)</AdditionalCscArguments>
+  </PropertyGroup>
+
+  <Target Name="AddPathMapToCsc" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <CscCommandLineArgs>$(CscCommandLineArgs) /pathmap:$(PathMap)</CscCommandLineArgs>
+    </PropertyGroup>
+  </Target>
+
   <!-- Set up stylecop -->
   <ItemGroup Condition="'$(ReadarrProject)'=='true' and '$(EnableAnalyzers)'!='false'">
     <!-- StyleCop analysis -->
@@ -215,5 +227,4 @@
     <_UsingDefaultRuntimeIdentifier>true</_UsingDefaultRuntimeIdentifier>
     <RuntimeIdentifier>osx-x64</RuntimeIdentifier>
   </PropertyGroup>
-
 </Project>
