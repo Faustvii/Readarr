@@ -257,6 +257,7 @@ class BookIndexOverview extends Component {
                 shortDateFormat={shortDateFormat}
                 longDateFormat={longDateFormat}
                 timeFormat={timeFormat}
+                showReleaseDate={overviewOptions.showReleaseDate ?? true}
                 {...overviewOptions}
                 {...otherProps}
               />

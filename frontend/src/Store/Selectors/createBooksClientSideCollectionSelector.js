@@ -5,6 +5,9 @@ import sortCollection from 'Utilities/Array/sortCollection';
 import createCustomFiltersSelector from './createCustomFiltersSelector';
 
 function createBooksClientSideCollectionSelector(uiSection) {
+  let lastSortKey = null;
+  let lastSortDirection = null;
+
   return createSelector(
     (state) => _.get(state, 'books'),
     (state) => _.get(state, 'authors'),
@@ -15,21 +18,74 @@ function createBooksClientSideCollectionSelector(uiSection) {
 
       const books = state.items;
       for (const book of books) {
-        book.author = authorState.items[authorState.itemMap[book.authorId]];
+        if (book && book.authorId && authorState.itemMap && authorState.items) {
+          const authorIndex = authorState.itemMap[book.authorId];
+          if (authorIndex != null && authorIndex >= 0 && authorIndex < authorState.items.length) {
+            book.author = authorState.items[authorIndex];
+          }
+        }
       }
 
       const filtered = filterCollection(books, state);
-      const sorted = sortCollection(filtered, state);
+
+      const currentSortKey = state.sortKey || 'releaseDate';
+      const currentSortDirection = state.sortDirection || 'descending';
+
+      const sortChanged = lastSortKey !== currentSortKey || lastSortDirection !== currentSortDirection;
+
+      if (sortChanged) {
+        lastSortKey = currentSortKey;
+        lastSortDirection = currentSortDirection;
+
+        const sorted = sortCollection(filtered, state);
+
+        return {
+          ...bookState,
+          ...uiSectionState,
+          customFilters,
+          items: sorted,
+          totalItems: state.items.length
+        };
+      }
 
       return {
         ...bookState,
         ...uiSectionState,
         customFilters,
-        items: sorted,
+        items: filtered,
         totalItems: state.items.length
+      };
+
+    }
+  );
+}
+
+function createAuthorBooksSelector(authorId) {
+  return createSelector(
+    (state) => _.get(state, 'books'),
+    (state) => _.get(state, 'authors'),
+    (bookState, authorState) => {
+      const books = bookState.items;
+
+      const authorBooks = authorId ? books.filter((book) => book.authorId === authorId) : books;
+
+      for (const book of authorBooks) {
+        if (book && book.authorId && authorState.itemMap && authorState.items) {
+          const authorIndex = authorState.itemMap[book.authorId];
+          if (authorIndex != null && authorIndex >= 0 && authorIndex < authorState.items.length) {
+            book.author = authorState.items[authorIndex];
+          }
+        }
+      }
+
+      return {
+        ...bookState,
+        items: authorBooks,
+        totalItems: authorBooks.length
       };
     }
   );
 }
 
 export default createBooksClientSideCollectionSelector;
+export { createAuthorBooksSelector };

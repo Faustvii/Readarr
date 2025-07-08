@@ -94,13 +94,16 @@ export default {
       let tags = [];
       if (payload.id) {
         const cfState = getSectionState(getState(), 'settings.customFormats', true);
-        const cf = cfState.items[cfState.itemMap[payload.id]];
-        tags = cf.specifications.map((tag, i) => {
-          return {
-            id: i + 1,
-            ...tag
-          };
-        });
+        const cfIndex = cfState.itemMap ? cfState.itemMap[payload.id] : -1;
+        const cf = cfIndex >= 0 && cfIndex < cfState.items.length ? cfState.items[cfIndex] : null;
+        if (cf && cf.specifications) {
+          tags = cf.specifications.map((tag, i) => {
+            return {
+              id: i + 1,
+              ...tag
+            };
+          });
+        }
       }
 
       dispatch(batchActions([

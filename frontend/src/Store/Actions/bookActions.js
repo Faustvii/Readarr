@@ -14,6 +14,8 @@ import { removeItem, set, update, updateItem } from './baseActions';
 import createHandleActions from './Creators/createHandleActions';
 import createRemoveItemHandler from './Creators/createRemoveItemHandler';
 import createSaveProviderHandler from './Creators/createSaveProviderHandler';
+import createClearReducer from './Creators/Reducers/createClearReducer';
+import createSetClientSideCollectionFilterReducer from './Creators/Reducers/createSetClientSideCollectionFilterReducer';
 import createSetClientSideCollectionSortReducer from './Creators/Reducers/createSetClientSideCollectionSortReducer';
 import createSetSettingValueReducer from './Creators/Reducers/createSetSettingValueReducer';
 import createSetTableOptionReducer from './Creators/Reducers/createSetTableOptionReducer';
@@ -194,6 +196,10 @@ export const defaultState = {
   sortDirection: sortDirections.DESCENDING,
   items: [],
   pendingChanges: {},
+  pageSize: 50,
+  totalPages: 0,
+  totalRecords: 0,
+  page: 1,
   sortPredicates: {
     rating: function(item) {
       return item.ratings.value;
@@ -270,62 +276,62 @@ export const defaultState = {
 };
 
 export const persistState = [
+  'books.pageSize',
   'books.sortKey',
   'books.sortDirection',
+  'books.selectedFilterKey',
   'books.columns'
 ];
 
 //
-// Actions Types
+// Action Types
 
 export const FETCH_BOOKS = 'books/fetchBooks';
+export const FETCH_BOOKS_BY_AUTHOR = 'books/fetchBooksByAuthor';
+export const FETCH_BOOKS_BY_IDS = 'books/fetchBooksByIds';
+export const FETCH_BOOK_BY_SLUG = 'books/fetchBookBySlug';
+export const FETCH_BOOKS_SCHEMA = 'books/fetchBooksSchema';
+export const GOTO_BOOKS_FIRST_PAGE = 'books/gotoBooksFirstPage';
+export const GOTO_BOOKS_PREVIOUS_PAGE = 'books/gotoBooksPreviousPage';
+export const GOTO_BOOKS_NEXT_PAGE = 'books/gotoBooksNextPage';
+export const GOTO_BOOKS_LAST_PAGE = 'books/gotoBooksLastPage';
+export const GOTO_BOOKS_PAGE = 'books/gotoBooksPage';
+export const FETCH_BOOKS_NEXT_PAGE = 'books/fetchBooksNextPage';
 export const SET_BOOKS_SORT = 'books/setBooksSort';
+export const SET_BOOKS_FILTER = 'books/setBooksFilter';
 export const SET_BOOKS_TABLE_OPTION = 'books/setBooksTableOption';
-export const CLEAR_BOOKS = 'books/clearBooks';
 export const SET_BOOK_VALUE = 'books/setBookValue';
 export const SAVE_BOOK = 'books/saveBook';
 export const DELETE_BOOK = 'books/deleteBook';
 export const DELETE_AUTHOR_BOOKS = 'books/deleteAuthorBooks';
+export const CLEAR_BOOKS = 'books/clearBooks';
 export const TOGGLE_BOOK_MONITORED = 'books/toggleBookMonitored';
 export const TOGGLE_BOOKS_MONITORED = 'books/toggleBooksMonitored';
 
 //
-// Action Creators
+// Actions
 
 export const fetchBooks = createThunk(FETCH_BOOKS);
+export const fetchBooksByAuthor = createThunk(FETCH_BOOKS_BY_AUTHOR);
+export const fetchBooksByIds = createThunk(FETCH_BOOKS_BY_IDS);
+export const fetchBookBySlug = createThunk(FETCH_BOOK_BY_SLUG);
+export const fetchBooksSchema = createThunk(FETCH_BOOKS_SCHEMA);
+export const gotoBooksFirstPage = createThunk(GOTO_BOOKS_FIRST_PAGE);
+export const gotoBooksPreviousPage = createThunk(GOTO_BOOKS_PREVIOUS_PAGE);
+export const gotoBooksNextPage = createThunk(GOTO_BOOKS_NEXT_PAGE);
+export const gotoBooksLastPage = createThunk(GOTO_BOOKS_LAST_PAGE);
+export const gotoBooksPage = createThunk(GOTO_BOOKS_PAGE);
+export const fetchBooksNextPage = createThunk(FETCH_BOOKS_NEXT_PAGE);
 export const setBooksSort = createAction(SET_BOOKS_SORT);
+export const setBooksFilter = createAction(SET_BOOKS_FILTER);
 export const setBooksTableOption = createAction(SET_BOOKS_TABLE_OPTION);
+export const setBookValue = createAction(SET_BOOK_VALUE);
+export const saveBook = createThunk(SAVE_BOOK);
+export const deleteBook = createThunk(DELETE_BOOK);
+export const deleteAuthorBooks = createThunk(DELETE_AUTHOR_BOOKS);
 export const clearBooks = createAction(CLEAR_BOOKS);
 export const toggleBookMonitored = createThunk(TOGGLE_BOOK_MONITORED);
 export const toggleBooksMonitored = createThunk(TOGGLE_BOOKS_MONITORED);
-
-export const saveBook = createThunk(SAVE_BOOK);
-
-export const deleteBook = createThunk(DELETE_BOOK, (payload) => {
-  return {
-    ...payload,
-    queryParams: {
-      deleteFiles: payload.deleteFiles,
-      addImportListExclusion: payload.addImportListExclusion
-    }
-  };
-});
-
-export const deleteAuthorBooks = createThunk(DELETE_AUTHOR_BOOKS, (payload) => {
-  return {
-    ...payload,
-    queryParams: {
-      authorId: payload.authorId
-    }
-  };
-});
-
-export const setBookValue = createAction(SET_BOOK_VALUE, (payload) => {
-  return {
-    section: 'books',
-    ...payload
-  };
-});
 
 //
 // Action Handlers
@@ -334,28 +340,182 @@ export const actionHandlers = handleThunks({
   [FETCH_BOOKS]: function(getState, payload, dispatch) {
     dispatch(set({ section, isFetching: true }));
 
+    const booksState = getState().books;
+    const bookIndexState = getState().bookIndex;
+    const defaultPayload = {
+      pageSize: booksState.pageSize || 50,
+      page: booksState.page || 1,
+      sortKey: bookIndexState.sortKey || 'releaseDate',
+      sortDirection: bookIndexState.sortDirection || sortDirections.DESCENDING
+    };
+
+    const requestPayload = { ...defaultPayload, ...payload };
+
     const { request, abortRequest } = createAjaxRequest({
       url: '/book',
-      data: payload,
+      data: requestPayload,
       traditional: true
     });
 
     request.done((data) => {
-      // Preserve books for other authors we didn't fetch
-      if (payload.hasOwnProperty('authorId')) {
-        const oldBooks = getState().books.items;
-        const newBooks = oldBooks.filter((x) => x.authorId !== payload.authorId);
-        data = newBooks.concat(data);
-      }
+      const booksData = data.records || data;
+
+      const totalPages = data.totalPages || Math.ceil((data.totalRecords || booksData.length) / (data.pageSize || requestPayload.pageSize));
 
       dispatch(batchActions([
-        update({ section, data }),
-
+        update({ section, data: booksData }),
         set({
           section,
           isFetching: false,
           isPopulated: true,
-          error: null
+          error: null,
+          pageSize: data.pageSize || requestPayload.pageSize,
+          totalPages,
+          totalRecords: data.totalRecords || booksData.length,
+          page: requestPayload.page || 1
+        })
+      ]));
+    });
+
+    request.fail((xhr) => {
+      dispatch(set({
+        section,
+        isFetching: false,
+        isPopulated: false,
+        error: xhr.aborted ? null : xhr
+      }));
+    });
+
+    return abortRequest;
+  },
+
+  [FETCH_BOOKS_BY_AUTHOR]: function(getState, payload, dispatch) {
+    dispatch(set({ section, isFetching: true }));
+
+    const requestPayload = {
+      authorId: payload.authorId
+    };
+
+    const { request, abortRequest } = createAjaxRequest({
+      url: '/book',
+      data: requestPayload,
+      traditional: true
+    });
+
+    request.done((data) => {
+      const booksData = data.records || data;
+
+      const oldBooks = getState().books.items;
+      const newBooks = oldBooks.filter((x) => x.authorId !== payload.authorId);
+      const updatedBooksData = newBooks.concat(booksData);
+
+      dispatch(batchActions([
+        update({ section, data: updatedBooksData }),
+        set({
+          section,
+          isFetching: false,
+          isPopulated: true,
+          error: null,
+          pageSize: undefined,
+          totalPages: undefined,
+          totalRecords: undefined,
+          page: undefined
+        })
+      ]));
+    });
+
+    request.fail((xhr) => {
+      dispatch(set({
+        section,
+        isFetching: false,
+        isPopulated: false,
+        error: xhr.aborted ? null : xhr
+      }));
+    });
+
+    return abortRequest;
+  },
+
+  [FETCH_BOOKS_BY_IDS]: function(getState, payload, dispatch) {
+    dispatch(set({ section, isFetching: true }));
+
+    const requestPayload = {
+      bookIds: payload.bookIds
+    };
+
+    const { request, abortRequest } = createAjaxRequest({
+      url: '/book',
+      data: requestPayload,
+      traditional: true
+    });
+
+    request.done((data) => {
+      const booksData = data.records || data;
+
+      const oldBooks = getState().books.items;
+      const newBookIds = booksData.map((book) => book.id);
+      const booksToKeep = oldBooks.filter((book) => !newBookIds.includes(book.id));
+      const updatedBooksData = booksToKeep.concat(booksData);
+
+      dispatch(batchActions([
+        update({ section, data: updatedBooksData }),
+        set({
+          section,
+          isFetching: false,
+          isPopulated: true,
+          error: null,
+          pageSize: undefined,
+          totalPages: undefined,
+          totalRecords: undefined,
+          page: undefined
+        })
+      ]));
+    });
+
+    request.fail((xhr) => {
+      dispatch(set({
+        section,
+        isFetching: false,
+        isPopulated: false,
+        error: xhr.aborted ? null : xhr
+      }));
+    });
+
+    return abortRequest;
+  },
+
+  [FETCH_BOOK_BY_SLUG]: function(getState, payload, dispatch) {
+    dispatch(set({ section, isFetching: true }));
+
+    const requestPayload = {
+      titleSlug: payload.titleSlug
+    };
+
+    const { request, abortRequest } = createAjaxRequest({
+      url: '/book',
+      data: requestPayload,
+      traditional: true
+    });
+
+    request.done((data) => {
+      const booksData = data.records || data;
+
+      const oldBooks = getState().books.items;
+      const newBookIds = booksData.map((book) => book.id);
+      const booksToKeep = oldBooks.filter((book) => !newBookIds.includes(book.id));
+      const updatedBooksData = booksToKeep.concat(booksData);
+
+      dispatch(batchActions([
+        update({ section, data: updatedBooksData }),
+        set({
+          section,
+          isFetching: false,
+          isPopulated: true,
+          error: null,
+          pageSize: undefined,
+          totalPages: undefined,
+          totalRecords: undefined,
+          page: undefined
         })
       ]));
     });
@@ -472,6 +632,115 @@ export const actionHandlers = handleThunks({
         })
       ));
     });
+  },
+
+  [GOTO_BOOKS_FIRST_PAGE]: function(getState, payload, dispatch) {
+    const currentPage = getState().books.page || 1;
+    const nextPage = 1;
+
+    if (currentPage !== nextPage) {
+      dispatch(fetchBooks({ ...payload, page: nextPage }));
+    }
+  },
+
+  [GOTO_BOOKS_PREVIOUS_PAGE]: function(getState, payload, dispatch) {
+    const currentPage = getState().books.page || 1;
+    const nextPage = Math.max(1, currentPage - 1);
+
+    if (currentPage !== nextPage) {
+      dispatch(fetchBooks({ ...payload, page: nextPage }));
+    }
+  },
+
+  [GOTO_BOOKS_NEXT_PAGE]: function(getState, payload, dispatch) {
+    const currentPage = getState().books.page || 1;
+    const totalPages = getState().books.totalPages || 1;
+    const nextPage = Math.min(totalPages, currentPage + 1);
+
+    if (currentPage !== nextPage) {
+      dispatch(fetchBooks({ ...payload, page: nextPage }));
+    }
+  },
+
+  [GOTO_BOOKS_LAST_PAGE]: function(getState, payload, dispatch) {
+    const currentPage = getState().books.page || 1;
+    const totalPages = getState().books.totalPages || 1;
+    const nextPage = totalPages;
+
+    if (currentPage !== nextPage) {
+      dispatch(fetchBooks({ ...payload, page: nextPage }));
+    }
+  },
+
+  [GOTO_BOOKS_PAGE]: function(getState, payload, dispatch) {
+    const { page } = payload;
+    const currentPage = getState().books.page || 1;
+
+    if (currentPage !== page) {
+      dispatch(fetchBooks({ ...payload, page }));
+    }
+  },
+
+  [FETCH_BOOKS_NEXT_PAGE]: function(getState, payload, dispatch) {
+    const state = getState().books;
+    const currentPage = state.page || 1;
+    const totalPages = state.totalPages || 1;
+
+    if (currentPage >= totalPages) {
+      return;
+    }
+
+    const nextPage = currentPage + 1;
+
+    dispatch(set({ section, isFetching: true }));
+
+    const bookIndexState = getState().bookIndex;
+    const defaultPayload = {
+      pageSize: state.pageSize || 50,
+      page: nextPage,
+      sortKey: bookIndexState.sortKey || 'releaseDate',
+      sortDirection: bookIndexState.sortDirection || sortDirections.DESCENDING
+    };
+
+    const requestPayload = { ...defaultPayload, ...payload };
+
+    const { request, abortRequest } = createAjaxRequest({
+      url: '/book',
+      data: requestPayload,
+      traditional: true
+    });
+
+    request.done((data) => {
+      const booksData = data.records || data;
+
+      const existingBooks = getState().books.items;
+      const updatedBooksData = existingBooks.concat(booksData);
+
+      dispatch(batchActions([
+        update({ section, data: updatedBooksData }),
+        set({
+          section,
+          isFetching: false,
+          isPopulated: true,
+          error: null,
+          pageSize: data.pageSize || requestPayload.pageSize,
+          totalPages: data.totalPages || Math.ceil((data.totalRecords || updatedBooksData.length) / (data.pageSize || requestPayload.pageSize)),
+          totalRecords: data.totalRecords || updatedBooksData.length,
+          page: nextPage
+        })
+      ]));
+    });
+
+    request.fail((xhr) => {
+      dispatch(set({
+        section,
+        isFetching: false,
+        isPopulated: false,
+        error: xhr.aborted ? null : xhr
+      }));
+    });
+
+    return abortRequest;
   }
 });
 
@@ -479,20 +748,20 @@ export const actionHandlers = handleThunks({
 // Reducers
 
 export const reducers = createHandleActions({
-
   [SET_BOOKS_SORT]: createSetClientSideCollectionSortReducer(section),
+
+  [SET_BOOKS_FILTER]: createSetClientSideCollectionFilterReducer(section),
 
   [SET_BOOKS_TABLE_OPTION]: createSetTableOptionReducer(section),
 
   [SET_BOOK_VALUE]: createSetSettingValueReducer(section),
 
-  [CLEAR_BOOKS]: (state) => {
-    return Object.assign({}, state, {
-      isFetching: false,
-      isPopulated: false,
-      error: null,
-      items: []
-    });
-  }
-
+  [CLEAR_BOOKS]: createClearReducer(section, {
+    isFetching: false,
+    isPopulated: false,
+    error: null,
+    items: [],
+    totalPages: 0,
+    totalRecords: 0
+  })
 }, defaultState, section);

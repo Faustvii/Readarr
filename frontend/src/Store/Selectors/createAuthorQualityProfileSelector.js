@@ -5,7 +5,10 @@ function createAuthorQualityProfileSelector() {
   return createSelector(
     (state) => state.settings.qualityProfiles.items,
     createAuthorSelector(),
-    (qualityProfiles, author = {}) => {
+    (qualityProfiles, author) => {
+      if (!author) {
+        return undefined;
+      }
       return qualityProfiles.find((profile) => {
         return profile.id === author.qualityProfileId;
       });

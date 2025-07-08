@@ -114,7 +114,10 @@ class AuthorDetailsSeries extends Component {
       onSortPress,
       isSmallScreen,
       onTableOptionChange,
-      authorMonitored
+      authorMonitored,
+      isEditorActive,
+      selectedState,
+      onSelectedChange
     } = this.props;
 
     return (
@@ -187,6 +190,9 @@ class AuthorDetailsSeries extends Component {
                             {...item}
                             position={positionMap[item.id]}
                             onMonitorBookPress={this.onMonitorBookPress}
+                            isEditorActive={isEditorActive}
+                            isSelected={selectedState && selectedState[item.id]}
+                            onSelectedChange={onSelectedChange}
                           />
                         );
                       })
@@ -227,7 +233,10 @@ AuthorDetailsSeries.propTypes = {
   onSortPress: PropTypes.func.isRequired,
   onMonitorBookPress: PropTypes.func.isRequired,
   uiSettings: PropTypes.object.isRequired,
-  authorMonitored: PropTypes.bool.isRequired
+  authorMonitored: PropTypes.bool.isRequired,
+  isEditorActive: PropTypes.bool,
+  selectedState: PropTypes.object,
+  onSelectedChange: PropTypes.func
 };
 
 export default AuthorDetailsSeries;

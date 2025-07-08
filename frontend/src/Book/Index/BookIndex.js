@@ -63,7 +63,8 @@ class BookIndex extends Component {
       allSelected: false,
       allUnselected: false,
       lastToggled: null,
-      selectedState: {}
+      selectedState: {},
+      isInfiniteScrollLoading: false
     };
   }
 
@@ -76,12 +77,17 @@ class BookIndex extends Component {
     const {
       items,
       sortKey,
-      sortDirection
+      sortDirection,
+      isFetching,
+      page,
+      totalPages,
+      pageSize,
+      onFetchBooksNextPage
     } = this.props;
 
     if (sortKey !== prevProps.sortKey ||
-        sortDirection !== prevProps.sortDirection ||
-        hasDifferentItemsOrOrder(prevProps.items, items)
+      sortDirection !== prevProps.sortDirection ||
+      hasDifferentItemsOrOrder(prevProps.items, items)
     ) {
       this.setJumpBarItems();
       this.setSelectedState();
@@ -89,6 +95,18 @@ class BookIndex extends Component {
 
     if (this.state.jumpToCharacter != null) {
       this.setState({ jumpToCharacter: null });
+    }
+
+    if (prevProps.isFetching && !isFetching) {
+      this.setState({ isInfiniteScrollLoading: false });
+    }
+
+    if (
+      items.length < (pageSize || 50) &&
+      page < totalPages &&
+      !isFetching
+    ) {
+      onFetchBooksNextPage();
     }
   }
 
@@ -263,6 +281,33 @@ class BookIndex extends Component {
     this.setState({ isConfirmSearchModalOpen: false });
   };
 
+  onViewSelect = (view) => {
+    this.props.onViewSelect(view);
+  };
+
+  onScroll = (scrollPosition) => {
+    console.log('[BookIndex] onScroll fired', scrollPosition);
+    this.props.onScroll(scrollPosition);
+
+    const { page, totalPages, isFetching } = this.props;
+    const { scroller, isInfiniteScrollLoading } = this.state;
+
+    if (scroller && !isFetching && !isInfiniteScrollLoading && page < totalPages) {
+      const scrollElement = scroller.view || scroller;
+      const scrollHeight = scrollElement.scrollHeight;
+      const clientHeight = scrollElement.clientHeight;
+      const scrollTop = scrollPosition.scrollTop;
+
+      const threshold = 500;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+      if (distanceFromBottom < threshold) {
+        this.setState({ isInfiniteScrollLoading: true });
+        this.props.onFetchBooksNextPage();
+      }
+    }
+  };
+
   //
   // Render
 
@@ -287,11 +332,14 @@ class BookIndex extends Component {
       saveError,
       isDeleting,
       deleteError,
-      onScroll,
-      onSortSelect,
-      onFilterSelect,
-      onViewSelect,
-      onRssSyncPress,
+      page,
+      totalPages,
+      totalRecords,
+      onFirstPagePress,
+      onPreviousPagePress,
+      onNextPagePress,
+      onLastPagePress,
+      onPageSelect,
       ...otherProps
     } = this.props;
 
@@ -336,7 +384,7 @@ class BookIndex extends Component {
               iconName={icons.RSS}
               isSpinning={isRssSyncExecuting}
               isDisabled={hasNoAuthor}
-              onPress={onRssSyncPress}
+              onPress={this.props.onRssSyncPress}
             />
 
             <PageToolbarSeparator />
@@ -425,14 +473,14 @@ class BookIndex extends Component {
             <BookIndexViewMenu
               view={view}
               isDisabled={hasNoAuthor}
-              onViewSelect={onViewSelect}
+              onViewSelect={this.onViewSelect}
             />
 
             <BookIndexSortMenu
               sortKey={sortKey}
               sortDirection={sortDirection}
               isDisabled={hasNoAuthor}
-              onSortSelect={onSortSelect}
+              onSortSelect={this.props.onSortSelect}
             />
 
             <BookIndexFilterMenu
@@ -440,7 +488,7 @@ class BookIndex extends Component {
               filters={filters}
               customFilters={customFilters}
               isDisabled={hasNoAuthor}
-              onFilterSelect={onFilterSelect}
+              onFilterSelect={this.props.onFilterSelect}
             />
           </PageToolbarSection>
         </PageToolbar>
@@ -450,7 +498,7 @@ class BookIndex extends Component {
             registerScroller={this.setScrollerRef}
             className={styles.contentBody}
             innerClassName={styles[`${view}InnerContentBody`]}
-            onScroll={onScroll}
+            onScroll={this.onScroll}
           >
             {
               isFetching && !isPopulated &&
@@ -573,6 +621,10 @@ BookIndex.propTypes = {
   saveError: PropTypes.object,
   isDeleting: PropTypes.bool.isRequired,
   deleteError: PropTypes.object,
+  page: PropTypes.number,
+  totalPages: PropTypes.number,
+  totalRecords: PropTypes.number,
+  pageSize: PropTypes.number.isRequired,
   onSortSelect: PropTypes.func.isRequired,
   onFilterSelect: PropTypes.func.isRequired,
   onViewSelect: PropTypes.func.isRequired,
@@ -580,7 +632,13 @@ BookIndex.propTypes = {
   onRssSyncPress: PropTypes.func.isRequired,
   onSearchPress: PropTypes.func.isRequired,
   onScroll: PropTypes.func.isRequired,
-  onSaveSelected: PropTypes.func.isRequired
+  onSaveSelected: PropTypes.func.isRequired,
+  onFirstPagePress: PropTypes.func.isRequired,
+  onPreviousPagePress: PropTypes.func.isRequired,
+  onNextPagePress: PropTypes.func.isRequired,
+  onLastPagePress: PropTypes.func.isRequired,
+  onPageSelect: PropTypes.func.isRequired,
+  onFetchBooksNextPage: PropTypes.func.isRequired
 };
 
 export default BookIndex;

@@ -40,7 +40,10 @@ class TableOptionsModal extends Component {
 
   componentDidUpdate(prevProps) {
     if (prevProps.pageSize !== this.state.pageSize) {
-      this.setState({ pageSize: this.props.pageSize });
+      this.setState({
+        pageSize: this.props.pageSize,
+        hasPageSize: !!this.props.pageSize
+      });
     }
   }
 

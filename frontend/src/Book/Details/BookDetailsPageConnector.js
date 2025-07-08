@@ -8,6 +8,7 @@ import LoadingIndicator from 'Components/Loading/LoadingIndicator';
 import NotFound from 'Components/NotFound';
 import PageContent from 'Components/Page/PageContent';
 import PageContentBody from 'Components/Page/PageContentBody';
+import { fetchBookBySlug } from 'Store/Actions/bookActions';
 import translate from 'Utilities/String/translate';
 import BookDetailsConnector from './BookDetailsConnector';
 
@@ -21,12 +22,11 @@ function createMapStateToProps() {
       const isFetching = books.isFetching || author.isFetching;
       const isPopulated = books.isPopulated && author.isPopulated;
 
-      // if books have been fetched, make sure requested one exists
-      // otherwise don't map titleSlug to trigger not found page
       if (!isFetching && isPopulated) {
         const bookIndex = _.findIndex(books.items, { titleSlug });
         if (bookIndex === -1) {
           return {
+            books,
             isFetching,
             isPopulated
           };
@@ -35,6 +35,7 @@ function createMapStateToProps() {
 
       return {
         titleSlug,
+        books,
         isFetching,
         isPopulated
       };
@@ -43,7 +44,8 @@ function createMapStateToProps() {
 }
 
 const mapDispatchToProps = {
-  push
+  push,
+  fetchBookBySlug
 };
 
 class BookDetailsPageConnector extends Component {
@@ -57,6 +59,13 @@ class BookDetailsPageConnector extends Component {
 
   componentDidMount() {
     this.populate();
+    this.fetchBookIfNeeded();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.titleSlug !== this.props.titleSlug && this.props.titleSlug) {
+      this.fetchBookIfNeeded();
+    }
   }
 
   //
@@ -64,6 +73,14 @@ class BookDetailsPageConnector extends Component {
 
   populate = () => {
     this.setState({ hasMounted: true });
+  };
+
+  fetchBookIfNeeded = () => {
+    const { titleSlug, books, fetchBookBySlug: fetchBookBySlugProp } = this.props;
+    const book = books && books.items && books.items.find((b) => b.titleSlug === titleSlug);
+    if (!book && books && !books.isFetching) {
+      fetchBookBySlugProp({ titleSlug });
+    }
   };
 
   //
@@ -107,8 +124,10 @@ class BookDetailsPageConnector extends Component {
 
 BookDetailsPageConnector.propTypes = {
   titleSlug: PropTypes.string,
+  books: PropTypes.object,
   match: PropTypes.shape({ params: PropTypes.shape({ titleSlug: PropTypes.string.isRequired }).isRequired }).isRequired,
   push: PropTypes.func.isRequired,
+  fetchBookBySlug: PropTypes.func.isRequired,
   isFetching: PropTypes.bool.isRequired,
   isPopulated: PropTypes.bool.isRequired
 };

@@ -6,6 +6,7 @@ import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 import * as commandNames from 'Commands/commandNames';
 import { toggleAuthorMonitored } from 'Store/Actions/authorActions';
+import { clearBooks, fetchBooksByAuthor, gotoBooksFirstPage, gotoBooksLastPage, gotoBooksNextPage, gotoBooksPage, gotoBooksPreviousPage } from 'Store/Actions/bookActions';
 import { clearBookFiles, fetchBookFiles } from 'Store/Actions/bookFileActions';
 import { saveBookEditor } from 'Store/Actions/bookIndexActions';
 import { executeCommand } from 'Store/Actions/commandActions';
@@ -23,12 +24,17 @@ import AuthorDetails from './AuthorDetails';
 const selectBooks = createSelector(
   (state) => state.books,
   (state) => state.bookIndex,
-  (books, index) => {
+  (state, { id }) => id,
+  (books, index, authorId) => {
     const {
       items,
       isFetching,
       isPopulated,
-      error
+      error,
+      pageSize,
+      totalPages,
+      totalRecords,
+      page
     } = books;
 
     const {
@@ -38,8 +44,9 @@ const selectBooks = createSelector(
       deleteError
     } = index;
 
-    const hasBooks = !!items.length;
-    const hasMonitoredBooks = items.some((e) => e.monitored);
+    const authorBooks = authorId ? items.filter((book) => book.authorId === authorId) : items;
+    const hasBooks = !!authorBooks.length;
+    const hasMonitoredBooks = authorBooks.some((e) => e.monitored);
 
     return {
       isBooksFetching: isFetching,
@@ -50,7 +57,11 @@ const selectBooks = createSelector(
       isSaving,
       saveError,
       isDeleting,
-      deleteError
+      deleteError,
+      pageSize,
+      totalPages,
+      totalRecords,
+      page
     };
   }
 );
@@ -108,7 +119,8 @@ function createMapStateToProps() {
     createAllAuthorSelector(),
     createCommandsSelector(),
     createDimensionsSelector(),
-    (titleSlug, books, series, bookFiles, allAuthors, commands, dimensions) => {
+    (state) => state.books,
+    (titleSlug, books, series, bookFiles, allAuthors, commands, dimensions, rawBooks) => {
       const sortedAuthor = _.orderBy(allAuthors, 'sortNameLastFirst');
       const authorIndex = _.findIndex(sortedAuthor, { titleSlug });
       const author = sortedAuthor[authorIndex];
@@ -126,7 +138,11 @@ function createMapStateToProps() {
         isSaving,
         saveError,
         isDeleting,
-        deleteError
+        deleteError,
+        pageSize,
+        totalPages,
+        totalRecords,
+        page
       } = books;
 
       const {
@@ -198,7 +214,12 @@ function createMapStateToProps() {
         hasBookFiles,
         previousAuthor,
         nextAuthor,
-        isSmallScreen: dimensions.isSmallScreen
+        isSmallScreen: dimensions.isSmallScreen,
+        pageSize,
+        totalPages,
+        totalRecords,
+        page,
+        books: rawBooks
       };
     }
   );
@@ -215,7 +236,14 @@ const mapDispatchToProps = {
   clearQueueDetails,
   clearReleases,
   cancelFetchReleases,
-  executeCommand
+  executeCommand,
+  fetchBooksByAuthor,
+  clearBooks,
+  gotoBooksFirstPage,
+  gotoBooksPreviousPage,
+  gotoBooksNextPage,
+  gotoBooksLastPage,
+  gotoBooksPage
 };
 
 class AuthorDetailsConnector extends Component {
@@ -265,6 +293,14 @@ class AuthorDetailsConnector extends Component {
 
   populate = () => {
     const authorId = this.props.id;
+    const { page = 1, pageSize = 50, books, statistics } = this.props;
+
+    const authorBooks = books && books.items ? books.items.filter((book) => book.authorId === authorId) : [];
+    const hasCompleteBookList = statistics && statistics.totalBookCount !== 0 && authorBooks.length >= statistics.totalBookCount;
+
+    if (!hasCompleteBookList) {
+      this.props.fetchBooksByAuthor({ authorId, page, pageSize });
+    }
 
     this.props.fetchSeries({ authorId });
     this.props.fetchBookFiles({ authorId });
@@ -307,6 +343,31 @@ class AuthorDetailsConnector extends Component {
     this.props.saveBookEditor(payload);
   };
 
+  onFirstPagePress = () => {
+    const { pageSize } = this.props;
+    this.props.gotoBooksFirstPage({ authorId: this.props.id, pageSize });
+  };
+
+  onPreviousPagePress = () => {
+    const { pageSize } = this.props;
+    this.props.gotoBooksPreviousPage({ authorId: this.props.id, pageSize });
+  };
+
+  onNextPagePress = () => {
+    const { pageSize } = this.props;
+    this.props.gotoBooksNextPage({ authorId: this.props.id, pageSize });
+  };
+
+  onLastPagePress = () => {
+    const { pageSize } = this.props;
+    this.props.gotoBooksLastPage({ authorId: this.props.id, pageSize });
+  };
+
+  onPageSelect = (page) => {
+    const { pageSize } = this.props;
+    this.props.gotoBooksPage({ authorId: this.props.id, page, pageSize });
+  };
+
   //
   // Render
 
@@ -318,6 +379,11 @@ class AuthorDetailsConnector extends Component {
         onRefreshPress={this.onRefreshPress}
         onSearchPress={this.onSearchPress}
         onSaveSelected={this.onSaveSelected}
+        onFirstPagePress={this.onFirstPagePress}
+        onPreviousPagePress={this.onPreviousPagePress}
+        onNextPagePress={this.onNextPagePress}
+        onLastPagePress={this.onLastPagePress}
+        onPageSelect={this.onPageSelect}
       />
     );
   }
@@ -341,7 +407,18 @@ AuthorDetailsConnector.propTypes = {
   clearQueueDetails: PropTypes.func.isRequired,
   clearReleases: PropTypes.func.isRequired,
   cancelFetchReleases: PropTypes.func.isRequired,
-  executeCommand: PropTypes.func.isRequired
+  executeCommand: PropTypes.func.isRequired,
+  fetchBooksByAuthor: PropTypes.func.isRequired,
+  clearBooks: PropTypes.func.isRequired,
+  gotoBooksFirstPage: PropTypes.func.isRequired,
+  gotoBooksPreviousPage: PropTypes.func.isRequired,
+  gotoBooksNextPage: PropTypes.func.isRequired,
+  gotoBooksLastPage: PropTypes.func.isRequired,
+  gotoBooksPage: PropTypes.func.isRequired,
+  page: PropTypes.number,
+  pageSize: PropTypes.number,
+  books: PropTypes.object,
+  statistics: PropTypes.object
 };
 
 export default connect(createMapStateToProps, mapDispatchToProps)(AuthorDetailsConnector);

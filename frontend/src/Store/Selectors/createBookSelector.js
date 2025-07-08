@@ -6,7 +6,16 @@ function createBookSelector() {
     (state) => state.books.itemMap,
     (state) => state.books.items,
     (bookId, itemMap, allBooks) => {
-      return allBooks[itemMap[bookId]];
+      if (!bookId || !itemMap || !allBooks) {
+        return null;
+      }
+
+      const index = itemMap[bookId];
+      if (index == null || index < 0 || index >= allBooks.length) {
+        return null;
+      }
+
+      return allBooks[index];
     }
   );
 }

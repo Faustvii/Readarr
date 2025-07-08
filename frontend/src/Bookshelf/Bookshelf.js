@@ -113,6 +113,12 @@ class Bookshelf extends Component {
         });
       }
     }
+
+    if (prevProps.items !== this.props.items) {
+      this.cache.clearAll();
+      this.setJumpBarItems();
+      this.setSelectedState();
+    }
   }
 
   //
@@ -158,12 +164,7 @@ class Bookshelf extends Component {
       order.reverse();
     }
 
-    const jumpBarItems = {
-      characters,
-      order
-    };
-
-    this.setState({ jumpBarItems });
+    this.setState({ jumpBarItems: { characters, order } });
   }
 
   getSelectedIds = () => {
@@ -210,22 +211,28 @@ class Bookshelf extends Component {
 
   estimateRowHeight = (width) => {
     const {
-      bookCount,
       items
     } = this.props;
 
-    if (bookCount === undefined || bookCount === 0 || items.length === 0) {
+    if (items.length === 0) {
       return 100;
     }
+
+    const totalBooks = items.reduce((sum, author) => {
+      return sum + (author.statistics ? author.statistics.totalBookCount : 0);
+    }, 0);
+
+    const averageBooksPerAuthor = items.length > 0 ? totalBooks / items.length : 0;
 
     // guess 250px per book entry
     // available width is total width less 186px for select, status etc
     const cols = Math.max(Math.floor((width - 186) / 250), 1);
-    const booksPerAuthor = bookCount / items.length;
-    const bookRowsPerAuthor = booksPerAuthor / cols;
+    const bookRowsPerAuthor = averageBooksPerAuthor / cols;
 
     // each row is 23px per book row plus 16px padding
-    return bookRowsPerAuthor * 23 + 16;
+    const estimatedHeight = bookRowsPerAuthor * 23 + 16;
+
+    return estimatedHeight;
   };
 
   rowRenderer = ({ key, rowIndex, parent, style }) => {
@@ -238,6 +245,7 @@ class Bookshelf extends Component {
     } = this.state;
 
     const item = items[rowIndex];
+    const bookCount = item.books ? item.books.length : 0;
 
     return (
       <CellMeasurer
@@ -253,7 +261,7 @@ class Bookshelf extends Component {
             style={style}
           >
             <BookStudioRowConnector
-              key={item.id}
+              key={`${item.id}-${bookCount}`}
               authorId={item.id}
               isSelected={selectedState[item.id]}
               onSelectedChange={this.onSelectedChange}
@@ -327,7 +335,8 @@ class Bookshelf extends Component {
       saveError,
       isSmallScreen,
       onSortPress,
-      onFilterSelect
+      onFilterSelect,
+      onUpdateSelectedPress
     } = this.props;
 
     const {
@@ -375,6 +384,7 @@ class Bookshelf extends Component {
               !error && isPopulated && !!items.length && scroller &&
                 <div className={styles.contentBodyContainer}>
                   <VirtualTable
+                    key={`bookshelf-${items.length}-${items.reduce((sum, author) => sum + (author.books ? author.books.length : 0), 0)}`}
                     items={items}
                     scrollIndex={scrollIndex}
                     columns={columns}
@@ -422,7 +432,7 @@ class Bookshelf extends Component {
           selectedCount={this.getSelectedIds().length}
           isSaving={isSaving}
           saveError={saveError}
-          onUpdateSelectedPress={this.onUpdateSelectedPress}
+          onUpdateSelectedPress={onUpdateSelectedPress}
         />
       </PageContent>
     );
@@ -435,7 +445,6 @@ Bookshelf.propTypes = {
   error: PropTypes.object,
   totalItems: PropTypes.number.isRequired,
   items: PropTypes.arrayOf(PropTypes.object).isRequired,
-  bookCount: PropTypes.number.isRequired,
   sortKey: PropTypes.string,
   sortDirection: PropTypes.oneOf(sortDirections.all),
   selectedFilterKey: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,

@@ -6,7 +6,16 @@ function createAuthorSelector() {
     (state) => state.authors.itemMap,
     (state) => state.authors.items,
     (authorId, itemMap, allAuthors) => {
-      return allAuthors[itemMap[authorId]];
+      if (!authorId || !itemMap || !allAuthors) {
+        return null;
+      }
+
+      const index = itemMap[authorId];
+      if (index == null || index < 0 || index >= allAuthors.length) {
+        return null;
+      }
+
+      return allAuthors[index];
     }
   );
 }

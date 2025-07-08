@@ -40,6 +40,19 @@ class Scroller extends Component {
     this.props.registerScroller(ref);
   };
 
+  onScrollInternal = (event) => {
+    const {
+      scrollTop,
+      scrollLeft
+    } = event.currentTarget;
+
+    const onScroll = this.props.onScroll;
+
+    if (onScroll) {
+      onScroll({ scrollTop, scrollLeft });
+    }
+  };
+
   //
   // Render
 
@@ -65,6 +78,7 @@ class Scroller extends Component {
           autoScroll && styles.autoScroll
         )}
         tabIndex={-1}
+        onScroll={this.onScrollInternal}
         {...otherProps}
       >
         {children}

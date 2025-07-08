@@ -4,6 +4,7 @@ import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 import * as commandNames from 'Commands/commandNames';
 import withCurrentPage from 'Components/withCurrentPage';
+import { fetchBooksByIds } from 'Store/Actions/bookActions';
 import { executeCommand } from 'Store/Actions/commandActions';
 import * as queueActions from 'Store/Actions/queueActions';
 import createCommandExecutingSelector from 'Store/Selectors/createCommandExecutingSelector';
@@ -24,6 +25,7 @@ function createMapStateToProps() {
         isBooksFetching: books.isFetching,
         isBooksPopulated: books.isPopulated,
         booksError: books.error,
+        books: books.items,
         isRefreshMonitoredDownloadsExecuting,
         ...options,
         ...queue
@@ -34,10 +36,18 @@ function createMapStateToProps() {
 
 const mapDispatchToProps = {
   ...queueActions,
+  fetchBooksByIds,
   executeCommand
 };
 
 class QueueConnector extends Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      fetchedBookIds: new Set()
+    };
+  }
 
   //
   // Lifecycle
@@ -62,6 +72,23 @@ class QueueConnector extends Component {
   }
 
   componentDidUpdate(prevProps) {
+    if (this.props.items && this.props.items.length > 0 && !this.props.isBooksFetching) {
+      const bookIds = this.props.items
+        .map((item) => item.bookId)
+        .filter((bookId) => bookId != null)
+        .filter((bookId, index, array) => array.indexOf(bookId) === index);
+      const currentBooks = this.props.books || [];
+      const missingBookIds = bookIds.filter((bookId) =>
+        !currentBooks.some((book) => book.id === bookId)
+      );
+      const newBookIds = missingBookIds.filter((bookId) => !this.state.fetchedBookIds.has(bookId));
+      if (newBookIds.length > 0) {
+        this.setState((prevState) => ({
+          fetchedBookIds: new Set([...prevState.fetchedBookIds, ...newBookIds])
+        }));
+        this.props.fetchBooksByIds({ bookIds: newBookIds });
+      }
+    }
     if (
       this.props.includeUnknownAuthorItems !==
       prevProps.includeUnknownAuthorItems
@@ -168,7 +195,10 @@ QueueConnector.propTypes = {
   clearQueue: PropTypes.func.isRequired,
   grabQueueItems: PropTypes.func.isRequired,
   removeQueueItems: PropTypes.func.isRequired,
-  executeCommand: PropTypes.func.isRequired
+  fetchBooksByIds: PropTypes.func.isRequired,
+  executeCommand: PropTypes.func.isRequired,
+  isBooksFetching: PropTypes.bool.isRequired,
+  books: PropTypes.arrayOf(PropTypes.object).isRequired
 };
 
 export default withCurrentPage(

@@ -15,6 +15,7 @@
   overflow-y: scroll;
 
   &.autoScroll {
+    overflow-x: hidden;
     overflow-y: auto;
   }
 }
@@ -25,13 +26,16 @@
 
   &.autoScroll {
     overflow-x: auto;
+    overflow-y: hidden;
   }
 }
 
 .both {
-  overflow: scroll;
+  overflow-x: scroll;
+  overflow-y: scroll;
 
   &.autoScroll {
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: auto;
   }
 }

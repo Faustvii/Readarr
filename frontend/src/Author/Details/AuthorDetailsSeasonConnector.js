@@ -38,7 +38,12 @@ function createMapStateToProps() {
         sortDirection: books.sortDirection,
         authorMonitored: author.monitored,
         isSmallScreen: dimensions.isSmallScreen,
-        uiSettings
+        uiSettings,
+        pageSize: books.pageSize,
+        totalPages: books.totalPages,
+        totalRecords: books.totalRecords,
+        page: books.page,
+        isFetching: books.isFetching
       };
     }
   );
@@ -66,6 +71,10 @@ class AuthorDetailsSeasonConnector extends Component {
 
   onTableOptionChange = (payload) => {
     this.props.setBooksTableOption(payload);
+
+    if (payload.pageSize) {
+      this.props.onFirstPagePress();
+    }
   };
 
   onSortPress = (sortKey) => {
@@ -79,6 +88,26 @@ class AuthorDetailsSeasonConnector extends Component {
     });
   };
 
+  onFirstPagePress = () => {
+    this.props.onFirstPagePress();
+  };
+
+  onPreviousPagePress = () => {
+    this.props.onPreviousPagePress();
+  };
+
+  onNextPagePress = () => {
+    this.props.onNextPagePress();
+  };
+
+  onLastPagePress = () => {
+    this.props.onLastPagePress();
+  };
+
+  onPageSelect = (page) => {
+    this.props.onPageSelect(page);
+  };
+
   //
   // Render
 
@@ -89,6 +118,12 @@ class AuthorDetailsSeasonConnector extends Component {
         onSortPress={this.onSortPress}
         onTableOptionChange={this.onTableOptionChange}
         onMonitorBookPress={this.onMonitorBookPress}
+        onFirstPagePress={this.onFirstPagePress}
+        onPreviousPagePress={this.onPreviousPagePress}
+        onNextPagePress={this.onNextPagePress}
+        onLastPagePress={this.onLastPagePress}
+        onPageSelect={this.onPageSelect}
+        pageSize={this.props.pageSize}
       />
     );
   }
@@ -100,7 +135,13 @@ AuthorDetailsSeasonConnector.propTypes = {
   setBooksTableOption: PropTypes.func.isRequired,
   setAuthorDetailsId: PropTypes.func.isRequired,
   setAuthorDetailsSort: PropTypes.func.isRequired,
-  executeCommand: PropTypes.func.isRequired
+  executeCommand: PropTypes.func.isRequired,
+  onFirstPagePress: PropTypes.func.isRequired,
+  onPreviousPagePress: PropTypes.func.isRequired,
+  onNextPagePress: PropTypes.func.isRequired,
+  onLastPagePress: PropTypes.func.isRequired,
+  onPageSelect: PropTypes.func.isRequired,
+  pageSize: PropTypes.number
 };
 
 export default connect(createMapStateToProps, mapDispatchToProps)(AuthorDetailsSeasonConnector);

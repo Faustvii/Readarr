@@ -5,12 +5,14 @@ import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 import * as commandNames from 'Commands/commandNames';
 import withScrollPosition from 'Components/withScrollPosition';
+import { clearBooks, fetchBooks, fetchBooksNextPage, gotoBooksFirstPage, gotoBooksLastPage, gotoBooksNextPage, gotoBooksPage, gotoBooksPreviousPage } from 'Store/Actions/bookActions';
 import { saveBookEditor, setBookFilter, setBookSort, setBookTableOption, setBookView } from 'Store/Actions/bookIndexActions';
 import { executeCommand } from 'Store/Actions/commandActions';
 import scrollPositions from 'Store/scrollPositions';
 import createBookClientSideCollectionItemsSelector from 'Store/Selectors/createBookClientSideCollectionItemsSelector';
 import createCommandExecutingSelector from 'Store/Selectors/createCommandExecutingSelector';
 import createDimensionsSelector from 'Store/Selectors/createDimensionsSelector';
+import { registerPagePopulator, unregisterPagePopulator } from 'Utilities/pagePopulator';
 import BookIndex from './BookIndex';
 
 function createMapStateToProps() {
@@ -22,18 +24,12 @@ function createMapStateToProps() {
     createCommandExecutingSelector(commandNames.CUTOFF_UNMET_BOOK_SEARCH),
     createCommandExecutingSelector(commandNames.MISSING_BOOK_SEARCH),
     createDimensionsSelector(),
-    (
-      book,
-      isRefreshingAuthorCommand,
-      isRefreshingBookCommand,
-      isRssSyncExecuting,
-      isCutoffBooksSearch,
-      isMissingBooksSearch,
-      dimensionsState
-    ) => {
+    (state) => state.bookIndex,
+    (book, isRefreshingAuthorCommand, isRefreshingBookCommand, isRssSyncExecuting, isCutoffBooksSearch, isMissingBooksSearch, dimensionsState, bookIndex) => {
       const isRefreshingBook = isRefreshingBookCommand || isRefreshingAuthorCommand;
       return {
         ...book,
+        bookIndex,
         isRefreshingBook,
         isRssSyncExecuting,
         isSearching: isCutoffBooksSearch || isMissingBooksSearch,
@@ -51,6 +47,8 @@ function createMapDispatchToProps(dispatch, props) {
 
     onSortSelect(sortKey) {
       dispatch(setBookSort({ sortKey }));
+      dispatch(clearBooks());
+      dispatch(fetchBooks({ sortKey, page: 1 }));
     },
 
     onFilterSelect(selectedFilterKey) {
@@ -83,11 +81,62 @@ function createMapDispatchToProps(dispatch, props) {
         name: commandNames.BOOK_SEARCH,
         bookIds: items
       }));
+    },
+
+    dispatchFetchBooks() {
+      dispatch(fetchBooks());
+    },
+
+    onFetchBooksNextPage() {
+      dispatch(fetchBooksNextPage());
+    },
+
+    dispatchClearBooks() {
+      dispatch(clearBooks());
+    },
+
+    onFirstPagePress() {
+      dispatch(gotoBooksFirstPage());
+    },
+
+    onPreviousPagePress() {
+      dispatch(gotoBooksPreviousPage());
+    },
+
+    onNextPagePress() {
+      dispatch(gotoBooksNextPage());
+    },
+
+    onLastPagePress() {
+      dispatch(gotoBooksLastPage());
+    },
+
+    onPageSelect(page) {
+      dispatch(gotoBooksPage({ page }));
     }
   };
 }
 
 class BookIndexConnector extends Component {
+
+  //
+  // Lifecycle
+
+  componentDidMount() {
+    registerPagePopulator(this.populate);
+    this.populate();
+  }
+
+  componentWillUnmount() {
+    unregisterPagePopulator(this.populate);
+  }
+
+  //
+  // Control
+
+  populate = () => {
+    this.props.dispatchFetchBooks();
+  };
 
   //
   // Listeners
@@ -98,6 +147,10 @@ class BookIndexConnector extends Component {
 
   onSaveSelected = (payload) => {
     this.props.dispatchSaveBookEditor(payload);
+  };
+
+  onRefreshBookPress = (items) => {
+    this.props.onRefreshBookPress(items);
   };
 
   onScroll = ({ scrollTop }) => {
@@ -112,22 +165,36 @@ class BookIndexConnector extends Component {
       <BookIndex
         {...this.props}
         onViewSelect={this.onViewSelect}
-        onScroll={this.onScroll}
         onSaveSelected={this.onSaveSelected}
+        onRefreshBookPress={this.onRefreshBookPress}
+        onScroll={this.onScroll}
+        onSortSelect={this.props.onSortSelect}
+        onFetchBooksNextPage={this.props.onFetchBooksNextPage}
+        onFirstPagePress={this.props.onFirstPagePress}
+        onPreviousPagePress={this.props.onPreviousPagePress}
+        onNextPagePress={this.props.onNextPagePress}
+        onLastPagePress={this.props.onLastPagePress}
+        onPageSelect={this.props.onPageSelect}
       />
     );
   }
 }
 
 BookIndexConnector.propTypes = {
-  isSmallScreen: PropTypes.bool.isRequired,
-  view: PropTypes.string.isRequired,
   dispatchSetBookView: PropTypes.func.isRequired,
-  dispatchSaveBookEditor: PropTypes.func.isRequired
+  dispatchSaveBookEditor: PropTypes.func.isRequired,
+  dispatchFetchBooks: PropTypes.func.isRequired,
+  onRefreshBookPress: PropTypes.func,
+  onSortSelect: PropTypes.func,
+  onFetchBooksNextPage: PropTypes.func,
+  onFirstPagePress: PropTypes.func,
+  onPreviousPagePress: PropTypes.func,
+  onNextPagePress: PropTypes.func,
+  onLastPagePress: PropTypes.func,
+  onPageSelect: PropTypes.func,
+  page: PropTypes.number,
+  totalPages: PropTypes.number
 };
 
-export default withScrollPosition(
-  connect(createMapStateToProps, createMapDispatchToProps)(BookIndexConnector),
-  'bookIndex'
-);
+export default withScrollPosition(connect(createMapStateToProps, createMapDispatchToProps)(BookIndexConnector), 'bookIndex');
 
