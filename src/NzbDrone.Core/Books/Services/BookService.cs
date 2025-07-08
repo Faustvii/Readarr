@@ -40,6 +40,7 @@ namespace NzbDrone.Core.Books
         void DeleteMany(List<Book> books);
         void SetAddOptions(IEnumerable<Book> books);
         List<Book> GetAuthorBooksWithFiles(Author author);
+        PagingSpec<Book> GetPaged(PagingSpec<Book> pagingSpec);
     }
 
     public class BookService : IBookService,
@@ -313,6 +314,11 @@ namespace NzbDrone.Core.Books
         {
             var books = GetBooksByAuthorMetadataId(message.Author.AuthorMetadataId);
             DeleteMany(books);
+        }
+
+        public PagingSpec<Book> GetPaged(PagingSpec<Book> pagingSpec)
+        {
+            return _bookRepository.GetPaged(pagingSpec);
         }
     }
 }
