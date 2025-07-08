@@ -161,7 +161,6 @@ namespace Readarr.Api.V1.Books
 
         private PagingResource<BookResource> GetBooksWithPagination(PagingRequestResource paging)
         {
-            SqlBuilderExtensions.LogSql = true;
             var pagingResource = new PagingResource<BookResource>(paging);
             var pagingSpec = pagingResource.MapToPagingSpec<BookResource, Book>();
 
@@ -169,8 +168,6 @@ namespace Readarr.Api.V1.Books
             {
                 return MapToResource(new List<Book> { book }, false).First();
             });
-
-            SqlBuilderExtensions.LogSql = false;
 
             return result;
         }
