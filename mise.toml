@@ -1,0 +1,6 @@
+# Readarr Development Environment
+
+[tools]
+dotnet = "6.0"
+node = "20.11.1"
+yarn = "1.22.19"
