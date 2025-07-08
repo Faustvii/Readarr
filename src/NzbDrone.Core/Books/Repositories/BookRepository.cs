@@ -219,11 +219,35 @@ namespace NzbDrone.Core.Books
 
         public List<Book> GetAuthorBooksWithFiles(Author author)
         {
-            return Query(Builder()
-                         .Join<Book, Edition>((b, e) => b.Id == e.BookId)
-                         .Join<Edition, BookFile>((t, f) => t.Id == f.EditionId)
-                         .Where<Book>(x => x.AuthorMetadataId == author.AuthorMetadataId)
-                         .Where<Edition>(e => e.Monitored == true));
+            return Query(Builder().Join<Book, Edition>((b, e) => b.Id == e.BookId)
+                         .Join<Edition, BookFile>((e, f) => e.Id == f.EditionId)
+                         .Where<Book>(b => b.AuthorMetadataId == author.AuthorMetadataId));
+        }
+
+        protected override SqlBuilder PagedBuilder() => new SqlBuilder(_database.DatabaseType)
+              .Join<Book, AuthorMetadata>((l, r) => l.AuthorMetadataId == r.Id)
+              .Join<Book, Author>((l, r) => l.AuthorMetadataId == r.Id)
+              .Join<Book, Edition>((l, r) => l.Id == r.BookId && r.Monitored);
+
+        protected override IEnumerable<Book> PagedQuery(SqlBuilder sql) =>
+             _database.QueryJoined<Book, AuthorMetadata, Author, Edition>(sql, (book, metadata, author, monitoredEdition) =>
+             {
+                 book.AuthorMetadata = metadata;
+                 book.Author = author;
+                 book.Editions = new List<Edition>() { monitoredEdition };
+                 return book;
+             });
+
+        protected override string GetPagedOrderBy(PagingSpec<Book> pagingSpec)
+        {
+            var bookSortKey = TableMapping.Mapper.GetSortKey(nameof(Book.CleanTitle));
+
+            var sortKey = TableMapping.Mapper.GetSortKey(pagingSpec.SortKey);
+            var sortDirection = pagingSpec.SortDirection == SortDirection.Descending ? "DESC" : "ASC";
+            var pagingOffset = Math.Max(pagingSpec.Page - 1, 0) * pagingSpec.PageSize;
+            var sorting = $"\"{sortKey.Table ?? _table}\".\"{sortKey.Column}\" {sortDirection}, \"{_table}\".\"{bookSortKey.Column}\" {sortDirection} LIMIT {pagingSpec.PageSize} OFFSET {pagingOffset}";
+
+            return sorting;
         }
     }
 }
