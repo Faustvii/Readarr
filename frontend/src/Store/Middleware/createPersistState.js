@@ -5,24 +5,27 @@ import migrate from 'Store/Migrators/migrate';
 
 const columnPaths = [];
 
-const paths = _.reduce([...actions], (acc, action) => {
-  if (action.persistState) {
-    action.persistState.forEach((path) => {
-      if (path.match(/\.columns$/)) {
-        columnPaths.push(path);
-      }
+const paths = _.reduce(
+  [...actions],
+  (acc, action) => {
+    if (action.persistState) {
+      action.persistState.forEach((path) => {
+        if (path.match(/\.columns$/)) {
+          columnPaths.push(path);
+        }
 
-      acc.push(path);
-    });
-  }
+        acc.push(path);
+      });
+    }
 
-  return acc;
-}, []);
+    return acc;
+  },
+  []
+);
 
 function mergeColumns(path, initialState, persistedState, computedState) {
   const initialColumns = _.get(initialState, path);
   const persistedColumns = _.get(persistedState, path);
-
   if (!persistedColumns || !persistedColumns.length) {
     return;
   }
@@ -41,7 +44,11 @@ function mergeColumns(path, initialState, persistedState, computedState) {
       // We can't use a spread operator or Object.assign to clone the column
       // or any accessors are lost and can break translations.
       for (const prop of Object.keys(column)) {
-        Object.defineProperty(newColumn, prop, Object.getOwnPropertyDescriptor(column, prop));
+        Object.defineProperty(
+          newColumn,
+          prop,
+          Object.getOwnPropertyDescriptor(column, prop)
+        );
       }
 
       newColumn.isVisible = persistedColumn.isVisible;
@@ -52,7 +59,9 @@ function mergeColumns(path, initialState, persistedState, computedState) {
 
   // Add any columns added to the app in the initial position.
   initialColumns.forEach((initialColumn, index) => {
-    const persistedColumnIndex = persistedColumns.findIndex((i) => i.name === initialColumn.name);
+    const persistedColumnIndex = persistedColumns.findIndex(
+      (i) => i.name === initialColumn.name
+    );
     const column = Object.assign({}, initialColumn);
 
     if (persistedColumnIndex === -1) {

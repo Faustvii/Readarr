@@ -446,7 +446,7 @@ export const reducers = createHandleActions({
   [SET_AUTHOR_FILTER]: createSetClientSideCollectionFilterReducer(section),
 
   [SET_AUTHOR_VIEW]: function(state, { payload }) {
-    return Object.assign({}, state, { view: payload.view });
+    return Object.assign({}, state, { view: typeof payload.view === 'string' ? payload.view : 'posters' });
   },
 
   [SET_AUTHOR_TABLE_OPTION]: createSetTableOptionReducer(section),

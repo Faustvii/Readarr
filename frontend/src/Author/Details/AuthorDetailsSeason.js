@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 import React, { Component } from 'react';
 import Table from 'Components/Table/Table';
 import TableBody from 'Components/Table/TableBody';
+import TableOptionsModalWrapper from 'Components/Table/TableOptions/TableOptionsModalWrapper';
+import TablePager from 'Components/Table/TablePager';
 import { sortDirections } from 'Helpers/Props';
 import hasDifferentItemsOrOrder from 'Utilities/Object/hasDifferentItemsOrOrder';
 import getToggledRange from 'Utilities/Table/getToggledRange';
@@ -84,7 +86,17 @@ class AuthorDetailsSeason extends Component {
       sortDirection,
       onSortPress,
       onTableOptionChange,
-      selectedState
+      selectedState,
+      page,
+      totalPages,
+      totalRecords,
+      isFetching,
+      onFirstPagePress,
+      onPreviousPagePress,
+      onNextPagePress,
+      onLastPagePress,
+      onPageSelect,
+      pageSize
     } = this.props;
 
     let titleColumns = columns;
@@ -92,36 +104,63 @@ class AuthorDetailsSeason extends Component {
       titleColumns = columns.filter((x) => x.name !== 'select');
     }
 
+    const tableOptionsProps = {
+      ...this.props,
+      pageSize,
+      onTableOptionChange
+    };
+
     return (
       <div
         className={styles.bookType}
       >
         <div className={styles.books}>
-          <Table
-            columns={titleColumns}
-            sortKey={sortKey}
-            sortDirection={sortDirection}
-            onSortPress={onSortPress}
-            onTableOptionChange={onTableOptionChange}
+          <TableOptionsModalWrapper
+            {...tableOptionsProps}
+            columns={columns}
           >
-            <TableBody>
-              {
-                items.map((item) => {
-                  return (
-                    <BookRowConnector
-                      key={item.id}
-                      columns={columns}
-                      {...item}
-                      onMonitorBookPress={this.onMonitorBookPress}
-                      isEditorActive={isEditorActive}
-                      isSelected={selectedState[item.id]}
-                      onSelectedChange={this.onSelectedChange}
-                    />
-                  );
-                })
-              }
-            </TableBody>
-          </Table>
+            <Table
+              columns={titleColumns}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSortPress={onSortPress}
+              onTableOptionChange={onTableOptionChange}
+              pageSize={pageSize}
+            >
+              <TableBody>
+                {
+                  items.map((item) => {
+                    return (
+                      <BookRowConnector
+                        key={item.id}
+                        columns={columns}
+                        {...item}
+                        onMonitorBookPress={this.onMonitorBookPress}
+                        isEditorActive={isEditorActive}
+                        isSelected={selectedState[item.id]}
+                        onSelectedChange={this.onSelectedChange}
+                      />
+                    );
+                  })
+                }
+              </TableBody>
+            </Table>
+          </TableOptionsModalWrapper>
+
+          {
+            totalPages > 1 &&
+              <TablePager
+                page={page}
+                totalPages={totalPages}
+                totalRecords={totalRecords}
+                isFetching={isFetching}
+                onFirstPagePress={onFirstPagePress}
+                onPreviousPagePress={onPreviousPagePress}
+                onNextPagePress={onNextPagePress}
+                onLastPagePress={onLastPagePress}
+                onPageSelect={onPageSelect}
+              />
+          }
         </div>
       </div>
     );
@@ -141,7 +180,24 @@ AuthorDetailsSeason.propTypes = {
   onSelectedChange: PropTypes.func.isRequired,
   onSortPress: PropTypes.func.isRequired,
   onMonitorBookPress: PropTypes.func.isRequired,
-  uiSettings: PropTypes.object.isRequired
+  uiSettings: PropTypes.object.isRequired,
+  page: PropTypes.number,
+  totalPages: PropTypes.number,
+  totalRecords: PropTypes.number,
+  isFetching: PropTypes.bool,
+  onFirstPagePress: PropTypes.func,
+  onPreviousPagePress: PropTypes.func,
+  onNextPagePress: PropTypes.func,
+  onLastPagePress: PropTypes.func,
+  onPageSelect: PropTypes.func,
+  pageSize: PropTypes.number
+};
+
+AuthorDetailsSeason.defaultProps = {
+  page: 1,
+  totalPages: 1,
+  totalRecords: 0,
+  isFetching: false
 };
 
 export default AuthorDetailsSeason;

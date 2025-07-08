@@ -5,7 +5,10 @@ function createAuthorMetadataProfileSelector() {
   return createSelector(
     (state) => state.settings.metadataProfiles.items,
     createAuthorSelector(),
-    (metadataProfiles, author = {}) => {
+    (metadataProfiles, author) => {
+      if (!author) {
+        return undefined;
+      }
       return metadataProfiles.find((profile) => {
         return profile.id === author.metadataProfileId;
       });

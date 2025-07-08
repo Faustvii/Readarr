@@ -1,22 +1,43 @@
-import { createSelector, createSelectorCreator, defaultMemoize } from 'reselect';
-import hasDifferentItemsOrOrder from 'Utilities/Object/hasDifferentItemsOrOrder';
+import { createSelector } from 'reselect';
 import createClientSideCollectionSelector from './createClientSideCollectionSelector';
 
-function createUnoptimizedSelector(uiSection) {
+function createAuthorClientSideCollectionItemsSelector(uiSection) {
   return createSelector(
     createClientSideCollectionSelector('authors', uiSection),
-    (authors) => {
+    (state) => state.books.items,
+    (authors, books) => {
+      const booksByAuthor = books.reduce((acc, book) => {
+        if (!acc[book.authorId]) {
+          acc[book.authorId] = [];
+        }
+        acc[book.authorId].push(book);
+        return acc;
+      }, {});
+
       const items = authors.items.map((s) => {
         const {
           id,
           sortName,
-          sortNameLastFirst
+          sortNameLastFirst,
+          authorName,
+          monitored,
+          status,
+          isSaving,
+          statistics
         } = s;
+
+        const authorBooks = booksByAuthor[id] || [];
 
         return {
           id,
           sortName,
-          sortNameLastFirst
+          sortNameLastFirst,
+          authorName,
+          monitored,
+          status,
+          isSaving,
+          statistics,
+          books: authorBooks
         };
       });
 
@@ -25,22 +46,6 @@ function createUnoptimizedSelector(uiSection) {
         items
       };
     }
-  );
-}
-
-function authorListEqual(a, b) {
-  return hasDifferentItemsOrOrder(a, b);
-}
-
-const createAuthorEqualSelector = createSelectorCreator(
-  defaultMemoize,
-  authorListEqual
-);
-
-function createAuthorClientSideCollectionItemsSelector(uiSection) {
-  return createAuthorEqualSelector(
-    createUnoptimizedSelector(uiSection),
-    (author) => author
   );
 }
 

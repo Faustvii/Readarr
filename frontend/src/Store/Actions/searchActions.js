@@ -185,6 +185,10 @@ export const actionHandlers = handleThunks({
           isAdding: false,
           isAdded: true,
           addError: null
+        }),
+        set({
+          section: 'books',
+          isPopulated: true
         })
       ]));
     });

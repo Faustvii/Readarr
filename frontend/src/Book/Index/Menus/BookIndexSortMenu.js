@@ -20,7 +20,7 @@ function BookIndexSortMenu(props) {
     >
       <MenuContent>
         <SortMenuItem
-          name="status"
+          name="editions.monitored"
           sortKey={sortKey}
           sortDirection={sortDirection}
           onPress={onSortSelect}
@@ -38,7 +38,7 @@ function BookIndexSortMenu(props) {
         </SortMenuItem>
 
         <SortMenuItem
-          name="authorTitle"
+          name="authormetadata.sortName"
           sortKey={sortKey}
           sortDirection={sortDirection}
           onPress={onSortSelect}
@@ -56,7 +56,7 @@ function BookIndexSortMenu(props) {
         </SortMenuItem>
 
         <SortMenuItem
-          name="qualityProfileId"
+          name="authors.qualityProfileId"
           sortKey={sortKey}
           sortDirection={sortDirection}
           onPress={onSortSelect}
@@ -74,30 +74,12 @@ function BookIndexSortMenu(props) {
         </SortMenuItem>
 
         <SortMenuItem
-          name="bookFileCount"
-          sortKey={sortKey}
-          sortDirection={sortDirection}
-          onPress={onSortSelect}
-        >
-          Files
-        </SortMenuItem>
-
-        <SortMenuItem
-          name="path"
+          name="authors.path"
           sortKey={sortKey}
           sortDirection={sortDirection}
           onPress={onSortSelect}
         >
           Path
-        </SortMenuItem>
-
-        <SortMenuItem
-          name="sizeOnDisk"
-          sortKey={sortKey}
-          sortDirection={sortDirection}
-          onPress={onSortSelect}
-        >
-          Size on Disk
         </SortMenuItem>
       </MenuContent>
     </SortMenu>

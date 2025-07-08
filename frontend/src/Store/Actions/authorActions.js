@@ -6,7 +6,7 @@ import { createThunk, handleThunks } from 'Store/thunks';
 import createAjaxRequest from 'Utilities/createAjaxRequest';
 import dateFilterPredicate from 'Utilities/Date/dateFilterPredicate';
 import { set, updateItem } from './baseActions';
-import { fetchBooks } from './bookActions';
+import { fetchBooksByAuthor } from './bookActions';
 import createFetchHandler from './Creators/createFetchHandler';
 import createHandleActions from './Creators/createHandleActions';
 import createRemoveItemHandler from './Creators/createRemoveItemHandler';
@@ -363,7 +363,7 @@ export const actionHandlers = handleThunks({
     }).request;
 
     promise.done((data) => {
-      dispatch(fetchBooks({ authorId: id }));
+      dispatch(fetchBooksByAuthor({ authorId: id }));
 
       dispatch(set({
         section,

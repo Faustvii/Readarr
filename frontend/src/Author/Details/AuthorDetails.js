@@ -240,7 +240,12 @@ class AuthorDetails extends Component {
       saveError,
       isDeleting,
       deleteError,
-      statistics = {}
+      statistics = {},
+      onFirstPagePress,
+      onPreviousPagePress,
+      onNextPagePress,
+      onLastPagePress,
+      onPageSelect
     } = this.props;
 
     const {
@@ -494,6 +499,11 @@ class AuthorDetails extends Component {
                       setSelectedState={this.setSelectedState}
                       onSelectedChange={this.onSelectedChange}
                       isEditorActive={isEditorActive}
+                      onFirstPagePress={onFirstPagePress}
+                      onPreviousPagePress={onPreviousPagePress}
+                      onNextPagePress={onNextPagePress}
+                      onLastPagePress={onLastPagePress}
+                      onPageSelect={onPageSelect}
                     />
                   </TabPanel>
 
@@ -642,7 +652,12 @@ AuthorDetails.propTypes = {
   saveError: PropTypes.object,
   isDeleting: PropTypes.bool.isRequired,
   deleteError: PropTypes.object,
-  onSaveSelected: PropTypes.func.isRequired
+  onSaveSelected: PropTypes.func.isRequired,
+  onFirstPagePress: PropTypes.func,
+  onPreviousPagePress: PropTypes.func,
+  onNextPagePress: PropTypes.func,
+  onLastPagePress: PropTypes.func,
+  onPageSelect: PropTypes.func
 };
 
 AuthorDetails.defaultProps = {

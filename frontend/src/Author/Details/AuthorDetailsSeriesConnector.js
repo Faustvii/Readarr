@@ -74,7 +74,7 @@ const mapDispatchToProps = {
   executeCommand
 };
 
-class AuthorDetailsSeasonConnector extends Component {
+class AuthorDetailsSeriesConnector extends Component {
 
   //
   // Listeners
@@ -104,12 +104,15 @@ class AuthorDetailsSeasonConnector extends Component {
         onSortPress={this.onSortPress}
         onTableOptionChange={this.onTableOptionChange}
         onMonitorBookPress={this.onMonitorBookPress}
+        isEditorActive={false}
+        selectedState={{}}
+        onSelectedChange={() => {}}
       />
     );
   }
 }
 
-AuthorDetailsSeasonConnector.propTypes = {
+AuthorDetailsSeriesConnector.propTypes = {
   authorId: PropTypes.number.isRequired,
   toggleBooksMonitored: PropTypes.func.isRequired,
   setSeriesTableOption: PropTypes.func.isRequired,
@@ -117,4 +120,4 @@ AuthorDetailsSeasonConnector.propTypes = {
   executeCommand: PropTypes.func.isRequired
 };
 
-export default connect(createMapStateToProps, mapDispatchToProps)(AuthorDetailsSeasonConnector);
+export default connect(createMapStateToProps, mapDispatchToProps)(AuthorDetailsSeriesConnector);

@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { createSelector } from 'reselect';
 import withCurrentPage from 'Components/withCurrentPage';
+import { fetchBooksByIds } from 'Store/Actions/bookActions';
 import * as historyActions from 'Store/Actions/historyActions';
 import { registerPagePopulator, unregisterPagePopulator } from 'Utilities/pagePopulator';
 import History from './History';
@@ -19,6 +20,7 @@ function createMapStateToProps() {
         isBooksFetching: books.isFetching,
         isBooksPopulated: books.isPopulated,
         booksError: books.error,
+        books: books.items,
         ...history
       };
     }
@@ -26,10 +28,18 @@ function createMapStateToProps() {
 }
 
 const mapDispatchToProps = {
-  ...historyActions
+  ...historyActions,
+  fetchBooksByIds
 };
 
 class HistoryConnector extends Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      fetchedBookIds: new Set()
+    };
+  }
 
   //
   // Lifecycle
@@ -47,6 +57,26 @@ class HistoryConnector extends Component {
       fetchHistory();
     } else {
       gotoHistoryFirstPage();
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.items && this.props.items.length > 0 && !this.props.isBooksFetching) {
+      const bookIds = this.props.items
+        .map((item) => item.bookId)
+        .filter((bookId) => bookId != null)
+        .filter((bookId, index, array) => array.indexOf(bookId) === index);
+      const currentBooks = this.props.books || [];
+      const missingBookIds = bookIds.filter((bookId) =>
+        !currentBooks.some((book) => book.id === bookId)
+      );
+      const newBookIds = missingBookIds.filter((bookId) => !this.state.fetchedBookIds.has(bookId));
+      if (newBookIds.length > 0) {
+        this.setState((prevState) => ({
+          fetchedBookIds: new Set([...prevState.fetchedBookIds, ...newBookIds])
+        }));
+        this.props.fetchBooksByIds({ bookIds: newBookIds });
+      }
     }
   }
 
@@ -124,7 +154,11 @@ class HistoryConnector extends Component {
 HistoryConnector.propTypes = {
   useCurrentPage: PropTypes.bool.isRequired,
   items: PropTypes.arrayOf(PropTypes.object).isRequired,
+  books: PropTypes.arrayOf(PropTypes.object).isRequired,
+  isBooksPopulated: PropTypes.bool.isRequired,
+  isBooksFetching: PropTypes.bool.isRequired,
   fetchHistory: PropTypes.func.isRequired,
+  fetchBooksByIds: PropTypes.func.isRequired,
   gotoHistoryFirstPage: PropTypes.func.isRequired,
   gotoHistoryPreviousPage: PropTypes.func.isRequired,
   gotoHistoryNextPage: PropTypes.func.isRequired,

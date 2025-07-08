@@ -17,7 +17,9 @@ const omittedProperties = [
 
 function createItemMap(data) {
   return data.reduce((acc, d, index) => {
-    acc[d.id] = index;
+    if (d && d.id) {
+      acc[d.id] = index;
+    }
     return acc;
   }, {});
 }
