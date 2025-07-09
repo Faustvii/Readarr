@@ -124,7 +124,10 @@ class BookIndexConnector extends Component {
 
   componentDidMount() {
     registerPagePopulator(this.populate);
-    this.populate();
+    const { items, isPopulated } = this.props;
+    if (!isPopulated || !items || items.length === 0) {
+      this.populate();
+    }
   }
 
   componentWillUnmount() {
@@ -193,7 +196,10 @@ BookIndexConnector.propTypes = {
   onLastPagePress: PropTypes.func,
   onPageSelect: PropTypes.func,
   page: PropTypes.number,
-  totalPages: PropTypes.number
+  totalPages: PropTypes.number,
+  items: PropTypes.arrayOf(PropTypes.object),
+  isPopulated: PropTypes.bool,
+  isFetching: PropTypes.bool
 };
 
 export default withScrollPosition(connect(createMapStateToProps, createMapDispatchToProps)(BookIndexConnector), 'bookIndex');
