@@ -90,14 +90,12 @@ namespace Readarr.Api.V1.Books
             {
                 var books = _bookService.GetBooksByAuthor(authorId.Value);
 
-                var author = _authorService.GetAuthor(authorId.Value);
                 var editions = _editionService.GetEditionsByAuthor(authorId.Value)
                     .GroupBy(x => x.BookId)
                     .ToDictionary(x => x.Key, y => y.ToList());
 
                 foreach (var book in books)
                 {
-                    book.Author = author;
                     if (editions.TryGetValue(book.Id, out var bookEditions))
                     {
                         book.Editions = bookEditions;
