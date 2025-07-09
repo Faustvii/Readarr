@@ -38,7 +38,18 @@ namespace NzbDrone.Core.Books
 
         public List<Book> GetBooks(int authorId)
         {
-            return Query(Builder().Join<Book, Author>((l, r) => l.AuthorMetadataId == r.AuthorMetadataId).Where<Author>(a => a.Id == authorId));
+            var joinedBuilder = Builder()
+                .Join<Book, AuthorMetadata>((book, meta) => book.AuthorMetadataId == meta.Id)
+                .Join<AuthorMetadata, Author>((meta, author) => author.AuthorMetadataId == meta.Id)
+                .Where<Author>(x => x.Id == authorId);
+
+            var result = _database.QueryJoined<Book, AuthorMetadata>(joinedBuilder, (book, metadata) =>
+            {
+                book.AuthorMetadata = metadata;
+                return book;
+            }).ToList();
+
+            return result;
         }
 
         public List<Book> GetLastBooks(IEnumerable<int> authorMetadataIds)
@@ -225,9 +236,9 @@ namespace NzbDrone.Core.Books
         }
 
         protected override SqlBuilder PagedBuilder() => new SqlBuilder(_database.DatabaseType)
-              .Join<Book, AuthorMetadata>((l, r) => l.AuthorMetadataId == r.Id)
-              .Join<Book, Author>((l, r) => l.AuthorMetadataId == r.Id)
-              .Join<Book, Edition>((l, r) => l.Id == r.BookId && r.Monitored);
+              .Join<Book, AuthorMetadata>((book, meta) => book.AuthorMetadataId == meta.Id)
+              .Join<AuthorMetadata, Author>((meta, author) => meta.Id == author.AuthorMetadataId)
+              .Join<Book, Edition>((book, edition) => book.Id == edition.BookId && edition.Monitored);
 
         protected override IEnumerable<Book> PagedQuery(SqlBuilder sql) =>
              _database.QueryJoined<Book, AuthorMetadata, Author, Edition>(sql, (book, metadata, author, monitoredEdition) =>
