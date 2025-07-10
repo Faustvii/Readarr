@@ -87,10 +87,10 @@ class BookshelfConnector extends Component {
   //
   // Control
 
-  populate = async() => {
+  populate = () => {
     const { items, currentPage } = this.props;
-    if (items && items.length > 0 && (!currentPage || currentPage === 1)) {
-      await fetchBooks();
+    if (!items || items.length === 0 || (!currentPage || currentPage === 1)) {
+      this.props.fetchBooks();
     }
   };
 
