@@ -42,8 +42,9 @@ function createMapStateToProps() {
         bookCount: books.bookCount,
         isBooksPopulated: books.isPopulated,
         isSmallScreen: dimensionsState.isSmallScreen,
-        currentPage: books.page, // <-- add this
-        totalPages: books.totalPages // <-- add this
+        currentPage: books.page,
+        totalPages: books.totalPages,
+        totalRecords: books.totalRecords
       };
     }
   );
@@ -68,9 +69,9 @@ class BookshelfConnector extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    const { items, currentPage, totalPages, isFetching, pageSize } = this.props;
+    const { bookCount, currentPage, totalPages, totalRecords, isFetching } = this.props;
     if (
-      items.length < (pageSize || 50) &&
+      bookCount < totalRecords &&
       currentPage &&
       totalPages &&
       currentPage < totalPages &&
@@ -88,9 +89,11 @@ class BookshelfConnector extends Component {
   // Control
 
   populate = () => {
-    const { items, currentPage } = this.props;
-    if (!items || items.length === 0 || (!currentPage || currentPage === 1)) {
+    const { bookCount, totalRecords } = this.props;
+    if (bookCount === 0) {
       this.props.fetchBooks();
+    } else if (totalRecords > 0 && bookCount < totalRecords) {
+      this.props.fetchBooksNextPage();
     }
   };
 
@@ -135,6 +138,7 @@ BookshelfConnector.propTypes = {
   currentPage: PropTypes.number,
   totalPages: PropTypes.number,
   pageSize: PropTypes.number,
+  totalRecords: PropTypes.number,
   isPopulated: PropTypes.bool.isRequired,
   isFetching: PropTypes.bool.isRequired,
   bookCount: PropTypes.number,
