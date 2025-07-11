@@ -75,7 +75,7 @@ namespace Readarr.Api.V1.Books
                 return GetBooksWithSpecificParameters(authorId, bookIds, titleSlug, includeAllAuthorBooks);
             }
 
-            if (paging != null)
+            if (paging != null && paging.Page.HasValue && paging.PageSize.HasValue)
             {
                 return GetBooksWithPagination(paging);
             }
