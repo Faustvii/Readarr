@@ -62,7 +62,8 @@ namespace NzbDrone.Test.Common
             }
             else
             {
-                Start(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "bin", readarrConsoleExe));
+                // Use _output/net6.0/Readarr for both Debug and Release
+                Start(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "_output", "net6.0", readarrConsoleExe));
             }
 
             while (true)
