@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using NzbDrone.Common.Extensions;
@@ -37,6 +36,7 @@ namespace Readarr.Api.V1.Books
         protected readonly IAuthorService _authorService;
         protected readonly IEditionService _editionService;
         protected readonly IAddBookService _addBookService;
+        private readonly IBookRepository _bookRepository;
 
         public BookController(IAuthorService authorService,
                           IBookService bookService,
@@ -48,14 +48,15 @@ namespace Readarr.Api.V1.Books
                           IUpgradableSpecification upgradableSpecification,
                           IBroadcastSignalRMessage signalRBroadcaster,
                           QualityProfileExistsValidator qualityProfileExistsValidator,
-                          MetadataProfileExistsValidator metadataProfileExistsValidator)
+                          MetadataProfileExistsValidator metadataProfileExistsValidator,
+                          IBookRepository bookRepository)
 
         : base(bookService, seriesBookLinkService, authorStatisticsService, coverMapper, upgradableSpecification, signalRBroadcaster)
         {
             _authorService = authorService;
             _editionService = editionService;
             _addBookService = addBookService;
-
+            _bookRepository = bookRepository;
             PostValidator.RuleFor(s => s.ForeignBookId).NotEmpty();
             PostValidator.RuleFor(s => s.Author.QualityProfileId).SetValidator(qualityProfileExistsValidator);
             PostValidator.RuleFor(s => s.Author.MetadataProfileId).SetValidator(metadataProfileExistsValidator);
@@ -131,30 +132,50 @@ namespace Readarr.Api.V1.Books
             return MapToResource(_bookService.GetBooks(bookIds), false);
         }
 
+        // Fallback path for legacy clients and full library fetch
         private List<BookResource> GetBooksFallback()
         {
-            var editionTask = Task.Run(() => _editionService.GetAllMonitoredEditions());
-            var metadataTask = Task.Run(() => _authorService.GetAllAuthors());
-            var books = _bookService.GetAllBooks();
-
-            var editions = editionTask.GetAwaiter().GetResult().GroupBy(x => x.BookId).ToDictionary(x => x.Key, y => y.ToList());
-
-            var authors = metadataTask.GetAwaiter().GetResult().ToDictionary(x => x.AuthorMetadataId);
-
-            foreach (var book in books)
+            var booksWithData = _bookRepository.GetAllBooksWithRelatedData();
+            var resources = new List<BookResource>(booksWithData.Count);
+            foreach (var b in booksWithData)
             {
-                book.Author = authors[book.AuthorMetadataId];
-                if (editions.TryGetValue(book.Id, out var bookEditions))
+                var resource = new BookResource
                 {
-                    book.Editions = bookEditions;
-                }
-                else
-                {
-                    book.Editions = new List<Edition>();
-                }
+                    Id = b.Id,
+                    Title = b.Title,
+                    AuthorId = b.AuthorId,
+                    AuthorTitle = $"{b.AuthorNameLastFirst} {b.Title}",
+                    ForeignBookId = b.ForeignBookId,
+                    ForeignEditionId = b.SelectedEditionForeignEditionId,
+                    TitleSlug = b.TitleSlug,
+                    Monitored = b.Monitored,
+                    AnyEditionOk = b.AnyEditionOk,
+                    Ratings = b.SelectedEditionRatings,
+                    ReleaseDate = b.ReleaseDate,
+                    PageCount = b.SelectedEditionPageCount,
+                    Genres = b.Genres,
+                    Images = b.SelectedEditionImages?.ConvertAll(x => new MediaCover
+                    {
+                        Url = x.Url,
+                        CoverType = x.CoverType,
+                        RemoteUrl = x.RemoteUrl
+                    }) ?? new List<MediaCover>(),
+                    Links = b.SelectedEditionLinks,
+                    Added = b.Added,
+                    SeriesTitle = b.SeriesTitle,
+                    Disambiguation = b.SelectedEditionDisambiguation,
+                    Statistics = new BookStatisticsResource
+                    {
+                        BookFileCount = b.BookFileCount,
+                        BookCount = b.BookCount,
+                        TotalBookCount = b.TotalBookCount,
+                        SizeOnDisk = b.SizeOnDisk
+                    }
+                };
+                resources.Add(resource);
             }
 
-            return MapToResource(books, includeAuthor: false);
+            return resources;
         }
 
         private PagingResource<BookResource> GetBooksWithPagination(PagingRequestResource paging)
