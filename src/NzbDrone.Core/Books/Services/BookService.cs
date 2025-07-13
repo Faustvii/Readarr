@@ -189,7 +189,7 @@ namespace NzbDrone.Core.Books
 
         public List<Book> GetBooksByAuthor(int authorId)
         {
-            return _bookRepository.GetBooks(authorId).ToList();
+            return _bookRepository.GetBooks(authorId);
         }
 
         public List<Book> GetNextBooksByAuthorMetadataId(IEnumerable<int> authorMetadataIds)

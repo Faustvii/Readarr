@@ -44,9 +44,10 @@ namespace NzbDrone.Core.Books
                 .Join<AuthorMetadata, Author>((meta, author) => author.AuthorMetadataId == meta.Id)
                 .Where<Author>(x => x.Id == authorId);
 
-            var result = _database.QueryJoined<Book, AuthorMetadata>(joinedBuilder, (book, metadata) =>
+            var result = _database.QueryJoined<Book, AuthorMetadata, Author>(joinedBuilder, (book, metadata, author) =>
             {
                 book.AuthorMetadata = metadata;
+                book.Author = author;
                 return book;
             }).ToList();
 
