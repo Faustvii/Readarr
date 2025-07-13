@@ -270,11 +270,7 @@ namespace NzbDrone.Core.Books
                     e.""Images"" as SelectedEditionImages,
                     e.""Links"" as SelectedEditionLinks,
                     e.""Ratings"" as SelectedEditionRatings,
-                    COALESCE(s.""Title"", '') as SeriesTitle,
-                    COALESCE(bf_stats.""BookFileCount"", 0) as BookFileCount,
-                    CASE WHEN (b.""Monitored"" = 1 AND (b.""ReleaseDate"" < @currentDate OR b.""ReleaseDate"" IS NULL)) OR COALESCE(bf_stats.""BookFileCount"", 0) > 0 THEN 1 ELSE 0 END as BookCount,
-                    1 as TotalBookCount,
-                    COALESCE(bf_stats.""SizeOnDisk"", 0) as SizeOnDisk
+                    COALESCE(sbl.""SeriesTitle"", '') as SeriesTitle
                 FROM ""Books"" b
                 INNER JOIN ""AuthorMetadata"" am ON b.""AuthorMetadataId"" = am.""Id""
                 INNER JOIN ""Authors"" a ON am.""Id"" = a.""AuthorMetadataId""
@@ -297,18 +293,16 @@ namespace NzbDrone.Core.Books
                         AND e2.""Monitored"" = 1
                     )
                 ) e ON b.""Id"" = e.""BookId""
-                LEFT JOIN ""SeriesBookLink"" sbl ON b.""Id"" = sbl.""BookId""
-                LEFT JOIN ""Series"" s ON sbl.""SeriesId"" = s.""Id""
                 LEFT JOIN (
-                    SELECT
-                        e.""BookId"",
-                        COUNT(bf.""Id"") as BookFileCount,
-                        SUM(COALESCE(bf.""Size"", 0)) as SizeOnDisk
-                    FROM ""Editions"" e
-                    LEFT JOIN ""BookFiles"" bf ON e.""Id"" = bf.""EditionId""
-                    WHERE e.""Monitored"" = 1
-                    GROUP BY e.""BookId""
-                ) bf_stats ON b.""Id"" = bf_stats.""BookId""
+                    SELECT sbl.""BookId"", s.""Title"" as SeriesTitle
+                    FROM ""SeriesBookLink"" sbl
+                    LEFT JOIN ""Series"" s ON sbl.""SeriesId"" = s.""Id""
+                    INNER JOIN (
+                        SELECT ""BookId"", MIN(""Id"") as MinId
+                        FROM ""SeriesBookLink""
+                        GROUP BY ""BookId""
+                    ) first_series ON sbl.""BookId"" = first_series.""BookId"" AND sbl.""Id"" = first_series.""MinId""
+                ) sbl ON b.""Id"" = sbl.""BookId""
                 ORDER BY b.""Id""";
 
             using (var conn = _database.OpenConnection())

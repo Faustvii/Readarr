@@ -44,12 +44,6 @@ namespace NzbDrone.Core.Books
         // Series data
         public string SeriesTitle { get; set; }
 
-        // Statistics data
-        public int BookFileCount { get; set; }
-        public int BookCount { get; set; }
-        public int TotalBookCount { get; set; }
-        public long SizeOnDisk { get; set; }
-
         public BookWithRelatedData()
         {
             Links = new List<Links>();
