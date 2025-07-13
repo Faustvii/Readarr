@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NzbDrone.Common.EnvironmentInfo;
 using NzbDrone.Core.Configuration;
+using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -49,34 +50,47 @@ namespace NzbDrone.Core.Instrumentation.Extensions
                     new ("os", "unknown")
                 });
 
-            var builder = services.AddOpenTelemetry()
-                .WithTracing(tracing => tracing
-                    .SetResourceBuilder(resourceBuilder)
-                    .SetSampler(new TraceIdRatioBasedSampler(options.SamplingRate))
-                    .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddSource("Readarr.Database")
-                    .AddSource("Readarr.Command")
-                    .AddSource("Readarr.Event")
-                    .AddSource("Readarr.HealthCheck")
-                    .AddSource("Readarr.Metrics"))
-                .WithMetrics(metrics => metrics
-                    .SetResourceBuilder(resourceBuilder)
-                    .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddMeter("Readarr"));
+            // Manual OpenTelemetry setup without DependencyInjection package
+            var tracerProvider = Sdk.CreateTracerProviderBuilder()
+                .SetResourceBuilder(resourceBuilder)
+                .SetSampler(new TraceIdRatioBasedSampler(options.SamplingRate))
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddSource("Readarr.Database")
+                .AddSource("Readarr.Command")
+                .AddSource("Readarr.Event")
+                .AddSource("Readarr.HealthCheck")
+                .AddSource("Readarr.Metrics");
 
             if (options.EnableConsoleExporter)
             {
-                builder.WithTracing(tracing => tracing.AddConsoleExporter())
-                       .WithMetrics(metrics => metrics.AddConsoleExporter());
+                tracerProvider.AddConsoleExporter();
             }
 
             if (options.Exporter != null && !string.IsNullOrWhiteSpace(options.Exporter.Endpoint))
             {
-                builder.WithTracing(tracing => tracing.AddOtlpExporter())
-                       .WithMetrics(metrics => metrics.AddOtlpExporter());
+                tracerProvider.AddOtlpExporter();
             }
+
+            tracerProvider.Build();
+
+            var meterProvider = Sdk.CreateMeterProviderBuilder()
+                .SetResourceBuilder(resourceBuilder)
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddMeter("Readarr");
+
+            if (options.EnableConsoleExporter)
+            {
+                meterProvider.AddConsoleExporter();
+            }
+
+            if (options.Exporter != null && !string.IsNullOrWhiteSpace(options.Exporter.Endpoint))
+            {
+                meterProvider.AddOtlpExporter();
+            }
+
+            meterProvider.Build();
 
             if (options.EnableCustomMetrics)
             {

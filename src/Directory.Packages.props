@@ -11,14 +11,13 @@
     <PackageVersion Include="FluentAssertions" Version="5.10.3" />
     <PackageVersion Include="IPAddressRange" Version="6.1.0" />
     <PackageVersion Include="Octokit" Version="14.0.0" />
-    <PackageVersion Include="OpenTelemetry" Version="1.4.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.4.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.DependencyInjection" Version="1.4.0-rc.2" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc9.10" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.0.0-rc9.10" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.0.0-rc9.10" />
-    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.4.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.4.0" />
+    <PackageVersion Include="OpenTelemetry" Version="1.3.2" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.0.0-rc9.4" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.0.0-rc9.4" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.0.0-rc9.4" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.0.0-rc9.4" />
+    <PackageVersion Include="OpenTelemetry.Exporter.Console" Version="1.3.2" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.3.2" />
     <PackageVersion Include="Polly" Version="8.5.2" />
     <PackageVersion Include="Servarr.FluentMigrator.Runner" Version="3.3.2.9" />
     <PackageVersion Include="Servarr.FluentMigrator.Runner.SQLite" Version="3.3.2.9" />
