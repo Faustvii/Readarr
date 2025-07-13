@@ -16,6 +16,12 @@
       // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
       "console": "integratedTerminal",
       "stopAtEntry": false,
+      "env": {
+        "OTEL__EXPORTER__ENDPOINT": "http://localhost:4317",
+        "OTEL__TRACES__EXPORTER": "otlp",
+        "OTEL__METRICS__EXPORTER": "otlp",
+        "OTEL__ENABLE__CONSOLE__EXPORTER": "true"
+      },
       "sourceFileMap": {
         "./Readarr.Core": "${workspaceFolder}/src/NzbDrone.Core",
         "./Readarr.Api": "${workspaceFolder}/src/Readarr.Api",

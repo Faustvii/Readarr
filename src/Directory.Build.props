@@ -35,8 +35,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!--
         CS1591: Missing XML comment for publicly visible type or member 'Type_or_Member'
+        NU1902: OpenTelemetry packages for NET6 might log sensitive information (Readarr shouldn't have any) so we ignore it
+           https://github.com/advisories/GHSA-vh2m-22xx-q94f
     -->
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;NU1902</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>

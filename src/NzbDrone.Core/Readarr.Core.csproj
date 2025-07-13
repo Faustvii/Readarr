@@ -25,6 +25,13 @@
     <PackageReference Include="NLog" />
     <PackageReference Include="NLog.Targets.Syslog" />
     <PackageReference Include="Npgsql" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Extensions.DependencyInjection" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <PackageReference Include="RestSharp" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="TagLibSharp-Lidarr" />

@@ -19,6 +19,7 @@ using NzbDrone.Common.Serializer;
 using NzbDrone.Core.Configuration;
 using NzbDrone.Core.Datastore;
 using NzbDrone.Core.Instrumentation;
+using NzbDrone.Core.Instrumentation.Extensions;
 using NzbDrone.Core.Lifecycle;
 using NzbDrone.Core.Messaging.Events;
 using NzbDrone.Host.AccessControl;
@@ -55,6 +56,8 @@ namespace NzbDrone.Host
                 b.AddFilter("Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager", LogLevel.Error);
                 b.AddNLog();
             });
+
+            services.AddReadarrOpenTelemetry(Configuration);
 
             services.Configure<ForwardedHeadersOptions>(options =>
             {
@@ -244,6 +247,7 @@ namespace NzbDrone.Host
 
             app.UseForwardedHeaders();
             app.UseMiddleware<LoggingMiddleware>();
+            app.UseMiddleware<OpenTelemetryApiMiddleware>();
             app.UsePathBase(new PathString(configFileProvider.UrlBase));
             app.UseExceptionHandler(new ExceptionHandlerOptions
             {
@@ -276,6 +280,8 @@ namespace NzbDrone.Host
                 });
             }
 
+            // Prometheus endpoint configuration removed due to compatibility issues
+            // Will be re-enabled after .NET 8 upgrade with stable OpenTelemetry packages
             app.UseEndpoints(x =>
             {
                 x.MapHub<MessageHub>("/signalr/messages").RequireAuthorization("SignalR");

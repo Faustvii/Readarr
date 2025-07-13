@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dapper;
 using NzbDrone.Common.Extensions;
 using NzbDrone.Core.Datastore;
 using NzbDrone.Core.MediaFiles;
@@ -304,11 +303,7 @@ namespace NzbDrone.Core.Books
                     ) first_series ON sbl.""BookId"" = first_series.""BookId"" AND sbl.""Id"" = first_series.""MinId""
                 ) sbl ON b.""Id"" = sbl.""BookId""
                 ORDER BY b.""Id""";
-
-            using (var conn = _database.OpenConnection())
-            {
-                return conn.Query<BookWithRelatedData>(sql, new { currentDate = DateTime.UtcNow }).ToList();
-            }
+            return _database.RawQuery<BookWithRelatedData>(sql).ToList();
         }
 
         protected override SqlBuilder PagedBuilder() => new SqlBuilder(_database.DatabaseType)
