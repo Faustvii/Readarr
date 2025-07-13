@@ -137,6 +137,9 @@ namespace Readarr.Api.V1.Books
         {
             var booksWithData = _bookRepository.GetAllBooksWithRelatedData();
             var resources = new List<BookResource>(booksWithData.Count);
+
+            var authorStats = _authorStatisticsService.AuthorStatistics();
+            var bookStatsDict = authorStats.SelectMany(x => x.BookStatistics).ToDictionary(x => x.BookId);
             foreach (var b in booksWithData)
             {
                 var resource = new BookResource
@@ -163,15 +166,14 @@ namespace Readarr.Api.V1.Books
                     Links = b.SelectedEditionLinks,
                     Added = b.Added,
                     SeriesTitle = b.SeriesTitle,
-                    Disambiguation = b.SelectedEditionDisambiguation,
-                    Statistics = new BookStatisticsResource
-                    {
-                        BookFileCount = b.BookFileCount,
-                        BookCount = b.BookCount,
-                        TotalBookCount = b.TotalBookCount,
-                        SizeOnDisk = b.SizeOnDisk
-                    }
+                    Disambiguation = b.SelectedEditionDisambiguation
                 };
+
+                if (bookStatsDict.TryGetValue(b.Id, out var stats))
+                {
+                    resource.Statistics = stats.ToResource();
+                }
+
                 resources.Add(resource);
             }
 
