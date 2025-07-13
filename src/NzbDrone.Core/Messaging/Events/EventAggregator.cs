@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using NLog;
@@ -17,6 +18,7 @@ namespace NzbDrone.Core.Messaging.Events
         private readonly TaskFactory _taskFactory;
 
         private readonly Dictionary<string, object> _eventSubscribers;
+        private static readonly ActivitySource EventActivitySource = new ActivitySource("Readarr.Event");
 
         private class EventSubscribers<TEvent>
             where TEvent : class, IEvent
@@ -84,20 +86,40 @@ namespace NzbDrone.Core.Messaging.Events
                 subscribers = target as EventSubscribers<TEvent>;
             }
 
+            using var activity = EventActivitySource.StartActivity($"Event.{eventName}");
+            activity?.SetTag("event.type", @event.GetType().FullName);
+            activity?.SetTag("event.name", eventName);
+            activity?.SetTag("event.handler_count", subscribers._syncHandlers.Length + subscribers._asyncHandlers.Length + subscribers._globalHandlers.Length);
+
             //call synchronous handlers first.
             var handlers = subscribers._syncHandlers;
 
             foreach (var handler in handlers)
             {
+                using var handlerActivity = EventActivitySource.StartActivity($"Event.{eventName}.{handler.GetType().Name}");
+                handlerActivity?.SetTag("event.type", @event.GetType().FullName);
+                handlerActivity?.SetTag("event.name", eventName);
+                handlerActivity?.SetTag("handler.type", handler.GetType().FullName);
+                handlerActivity?.SetTag("handler.name", handler.GetType().Name);
+                handlerActivity?.SetTag("handler.sync", true);
+
+                var success = false;
                 try
                 {
                     _logger.Trace("{0} -> {1}", eventName, handler.GetType().Name);
                     handler.Handle(@event);
                     _logger.Trace("{0} <- {1}", eventName, handler.GetType().Name);
+                    success = true;
                 }
                 catch (Exception e)
                 {
                     _logger.Error(e, "{0} failed while processing [{1}]", handler.GetType().Name, eventName);
+                    handlerActivity?.SetTag("error", true);
+                    handlerActivity?.SetTag("error.message", e.Message);
+                }
+                finally
+                {
+                    handlerActivity?.SetTag("handler.status", success ? "success" : "failure");
                 }
             }
 
@@ -107,7 +129,30 @@ namespace NzbDrone.Core.Messaging.Events
 
                 _taskFactory.StartNew(() =>
                 {
-                    handlerLocal.HandleAsync(@event);
+                    using var handlerActivity = EventActivitySource.StartActivity($"Event.{eventName}.{handlerLocal.GetType().Name}");
+                    handlerActivity?.SetTag("event.type", @event.GetType().FullName);
+                    handlerActivity?.SetTag("event.name", eventName);
+                    handlerActivity?.SetTag("handler.type", handlerLocal.GetType().FullName);
+                    handlerActivity?.SetTag("handler.name", handlerLocal.GetType().Name);
+                    handlerActivity?.SetTag("handler.sync", false);
+                    handlerActivity?.SetTag("handler.global", true);
+
+                    var success = false;
+                    try
+                    {
+                        handlerLocal.HandleAsync(@event);
+                        success = true;
+                    }
+                    catch (Exception e)
+                    {
+                        handlerActivity?.SetTag("error", true);
+                        handlerActivity?.SetTag("error.message", e.Message);
+                        throw;
+                    }
+                    finally
+                    {
+                        handlerActivity?.SetTag("handler.status", success ? "success" : "failure");
+                    }
                 }, TaskCreationOptions.PreferFairness)
                 .LogExceptions();
             }
@@ -118,9 +163,32 @@ namespace NzbDrone.Core.Messaging.Events
 
                 _taskFactory.StartNew(() =>
                 {
-                    _logger.Trace("{0} ~> {1}", eventName, handlerLocal.GetType().Name);
-                    handlerLocal.HandleAsync(@event);
-                    _logger.Trace("{0} <~ {1}", eventName, handlerLocal.GetType().Name);
+                    using var handlerActivity = EventActivitySource.StartActivity($"Event.{eventName}.{handlerLocal.GetType().Name}");
+                    handlerActivity?.SetTag("event.type", @event.GetType().FullName);
+                    handlerActivity?.SetTag("event.name", eventName);
+                    handlerActivity?.SetTag("handler.type", handlerLocal.GetType().FullName);
+                    handlerActivity?.SetTag("handler.name", handlerLocal.GetType().Name);
+                    handlerActivity?.SetTag("handler.sync", false);
+
+                    var success = false;
+                    try
+                    {
+                        _logger.Trace("{0} ~> {1}", eventName, handlerLocal.GetType().Name);
+                        handlerLocal.HandleAsync(@event);
+                        _logger.Trace("{0} <~ {1}", eventName, handlerLocal.GetType().Name);
+                        success = true;
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Error(e, "{0} failed while processing [{1}]", handlerLocal.GetType().Name, eventName);
+                        handlerActivity?.SetTag("error", true);
+                        handlerActivity?.SetTag("error.message", e.Message);
+                        throw;
+                    }
+                    finally
+                    {
+                        handlerActivity?.SetTag("handler.status", success ? "success" : "failure");
+                    }
                 }, TaskCreationOptions.PreferFairness)
                 .LogExceptions();
             }

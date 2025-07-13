@@ -78,10 +78,7 @@ namespace NzbDrone.Core.Datastore
 
         public int Count()
         {
-            using (var conn = _database.OpenConnection())
-            {
-                return conn.ExecuteScalar<int>($"SELECT COUNT(*) FROM \"{_table}\"");
-            }
+            return _database.Scalar<int>($"SELECT COUNT(*) FROM \"{_table}\"");
         }
 
         public virtual IEnumerable<TModel> All()

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using NLog;
 using NzbDrone.Common.Cache;
@@ -33,6 +34,7 @@ namespace NzbDrone.Core.HealthCheck
         private readonly Logger _logger;
 
         private readonly ICached<HealthCheck> _healthCheckResults;
+        private static readonly ActivitySource HealthCheckActivitySource = new ActivitySource("Readarr.HealthCheck");
 
         private bool _hasRunHealthChecksAfterGracePeriod = false;
         private bool _isRunningHealthChecksAfterGracePeriod = false;
@@ -79,23 +81,75 @@ namespace NzbDrone.Core.HealthCheck
 
         private void PerformHealthCheck(IProvideHealthCheck[] healthChecks, IEvent message = null, bool performServerChecks = false)
         {
+            using var activity = HealthCheckActivitySource.StartActivity("HealthCheck.PerformHealthCheck");
+            activity?.SetTag("healthcheck.count", healthChecks.Length);
+            activity?.SetTag("healthcheck.perform_server_checks", performServerChecks);
+            activity?.SetTag("healthcheck.has_message", message != null);
+            if (message != null)
+            {
+                activity?.SetTag("healthcheck.message_type", message.GetType().FullName);
+            }
+
             var results = new List<HealthCheck>();
 
             foreach (var healthCheck in healthChecks)
             {
-                if (healthCheck is IProvideHealthCheckWithMessage && message != null)
+                using var checkActivity = HealthCheckActivitySource.StartActivity($"HealthCheck.{healthCheck.GetType().Name}");
+                checkActivity?.SetTag("healthcheck.type", healthCheck.GetType().FullName);
+                checkActivity?.SetTag("healthcheck.name", healthCheck.GetType().Name);
+                checkActivity?.SetTag("healthcheck.check_on_startup", healthCheck.CheckOnStartup);
+                checkActivity?.SetTag("healthcheck.check_on_schedule", healthCheck.CheckOnSchedule);
+                checkActivity?.SetTag("healthcheck.has_message", message != null);
+
+                var success = false;
+                HealthCheck result = null;
+                try
                 {
-                    results.Add(((IProvideHealthCheckWithMessage)healthCheck).Check(message));
+                    if (healthCheck is IProvideHealthCheckWithMessage && message != null)
+                    {
+                        result = ((IProvideHealthCheckWithMessage)healthCheck).Check(message);
+                    }
+                    else
+                    {
+                        result = healthCheck.Check();
+                    }
+
+                    success = true;
+                    checkActivity?.SetTag("healthcheck.result_type", result.Type.ToString());
+                    checkActivity?.SetTag("healthcheck.result_message", result.Message ?? "");
                 }
-                else
+                catch (Exception e)
                 {
-                    results.Add(healthCheck.Check());
+                    _logger.Error(e, "Health check {0} failed", healthCheck.GetType().Name);
+                    checkActivity?.SetTag("error", true);
+                    checkActivity?.SetTag("error.message", e.Message);
+                    throw;
+                }
+                finally
+                {
+                    checkActivity?.SetTag("healthcheck.status", success ? "success" : "failure");
+                    if (result != null)
+                    {
+                        results.Add(result);
+                    }
                 }
             }
 
             if (performServerChecks)
             {
-                results.AddRange(_serverSideNotificationService.GetServerChecks());
+                using var serverActivity = HealthCheckActivitySource.StartActivity("HealthCheck.ServerChecks");
+                try
+                {
+                    var serverResults = _serverSideNotificationService.GetServerChecks();
+                    results.AddRange(serverResults);
+                    serverActivity?.SetTag("healthcheck.server_count", serverResults.Count);
+                }
+                catch (Exception e)
+                {
+                    _logger.Error(e, "Server health checks failed");
+                    serverActivity?.SetTag("error", true);
+                    serverActivity?.SetTag("error.message", e.Message);
+                }
             }
 
             foreach (var result in results)
@@ -120,6 +174,10 @@ namespace NzbDrone.Core.HealthCheck
 
         public void Execute(CheckHealthCommand message)
         {
+            using var activity = HealthCheckActivitySource.StartActivity("HealthCheck.Execute");
+            activity?.SetTag("healthcheck.trigger", message.Trigger.ToString());
+            activity?.SetTag("healthcheck.manual", message.Trigger == CommandTrigger.Manual);
+
             if (message.Trigger == CommandTrigger.Manual)
             {
                 PerformHealthCheck(_healthChecks, null, true);
@@ -132,6 +190,9 @@ namespace NzbDrone.Core.HealthCheck
 
         public void HandleAsync(ApplicationStartedEvent message)
         {
+            using var activity = HealthCheckActivitySource.StartActivity("HealthCheck.ApplicationStarted");
+            activity?.SetTag("healthcheck.startup_checks_count", _startupHealthChecks.Length);
+
             PerformHealthCheck(_startupHealthChecks, null, true);
         }
 
@@ -147,6 +208,10 @@ namespace NzbDrone.Core.HealthCheck
             if (!_hasRunHealthChecksAfterGracePeriod && !_isRunningHealthChecksAfterGracePeriod && DateTime.UtcNow > _startupGracePeriodEndTime)
             {
                 _isRunningHealthChecksAfterGracePeriod = true;
+
+                using var activity = HealthCheckActivitySource.StartActivity("HealthCheck.AfterGracePeriod");
+                activity?.SetTag("healthcheck.grace_period_ended", true);
+                activity?.SetTag("healthcheck.startup_checks_count", _startupHealthChecks.Length);
 
                 PerformHealthCheck(_startupHealthChecks);
 
@@ -168,6 +233,11 @@ namespace NzbDrone.Core.HealthCheck
             {
                 return;
             }
+
+            using var eventActivity = HealthCheckActivitySource.StartActivity("HealthCheck.EventDriven");
+            eventActivity?.SetTag("healthcheck.event_type", message.GetType().FullName);
+            eventActivity?.SetTag("healthcheck.event_name", message.GetType().Name);
+            eventActivity?.SetTag("healthcheck.checks_count", checks.Length);
 
             var filteredChecks = new List<IProvideHealthCheck>();
             var healthCheckResults = _healthCheckResults.Values.ToList();

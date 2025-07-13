@@ -25,6 +25,7 @@ using NzbDrone.Common.Instrumentation.Extensions;
 using NzbDrone.Common.Options;
 using NzbDrone.Core.Configuration;
 using NzbDrone.Core.Datastore.Extensions;
+using NzbDrone.Core.Instrumentation.Extensions;
 using NzbDrone.Core.Lifecycle;
 using NzbDrone.Core.Messaging.Events;
 using PostgresOptions = NzbDrone.Core.Datastore.PostgresOptions;
@@ -95,6 +96,7 @@ namespace NzbDrone.Host
                                         .AddNzbDroneLogger()
                                         .AddGithubClient()
                                         .AddDatabase()
+                                        .AddOpenTelemetry()
                                         .AddStartupContext(startupContext)
                                         .Resolve<UtilityModeRouter>()
                                         .Route(appMode);
@@ -161,6 +163,7 @@ namespace NzbDrone.Host
                         .AddNzbDroneLogger()
                         .AddGithubClient()
                         .AddDatabase()
+                        .AddOpenTelemetry()
                         .AddStartupContext(context)
                         .Resolve<IEventAggregator>().PublishEvent(new ApplicationStartingEvent());
                 })

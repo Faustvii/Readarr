@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using NLog;
 using NzbDrone.Common;
@@ -18,6 +19,7 @@ namespace NzbDrone.Core.Messaging.Commands
         private readonly IManageCommandQueue _commandQueueManager;
         private readonly IEventAggregator _eventAggregator;
 
+        private static readonly ActivitySource CommandActivitySource = new ActivitySource("Readarr.Command");
         private static CancellationTokenSource _cancellationTokenSource;
 
         public CommandExecutor(IServiceFactory serviceFactory,
@@ -60,8 +62,13 @@ namespace NzbDrone.Core.Messaging.Commands
         private void ExecuteCommand<TCommand>(TCommand command, CommandModel commandModel)
             where TCommand : Command
         {
-            IExecute<TCommand> handler = null;
-
+            var handler = default(IExecute<TCommand>);
+            using var activity = CommandActivitySource.StartActivity($"Command.{command.GetType().Name}");
+            activity?.SetTag("command.type", command.GetType().FullName);
+            activity?.SetTag("command.name", command.Name);
+            activity?.SetTag("command.trigger", command.Trigger.ToString());
+            activity?.SetTag("command.id", commandModel.Id);
+            var success = false;
             try
             {
                 handler = (IExecute<TCommand>)_serviceFactory.Build(typeof(IExecute<TCommand>));
@@ -77,6 +84,7 @@ namespace NzbDrone.Core.Messaging.Commands
                 }
 
                 handler.Execute(command);
+                success = true;
 
                 _commandQueueManager.Complete(commandModel, command.CompletionMessage ?? commandModel.Message);
             }
@@ -84,12 +92,16 @@ namespace NzbDrone.Core.Messaging.Commands
             {
                 _commandQueueManager.SetMessage(commandModel, "Failed");
                 _commandQueueManager.Fail(commandModel, ex.Message, ex);
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
                 throw;
             }
             catch (Exception ex)
             {
                 _commandQueueManager.SetMessage(commandModel, "Failed");
                 _commandQueueManager.Fail(commandModel, "Failed", ex);
+                activity?.SetTag("error", true);
+                activity?.SetTag("error.message", ex.Message);
                 throw;
             }
             finally
@@ -107,6 +119,8 @@ namespace NzbDrone.Core.Messaging.Commands
                 {
                     _logger.Trace("{0} <- {1} [{2}]", command.GetType().Name, handler.GetType().Name, commandModel.Duration.ToString());
                 }
+
+                activity?.SetTag("command.status", success ? "success" : "failure");
             }
         }
 
