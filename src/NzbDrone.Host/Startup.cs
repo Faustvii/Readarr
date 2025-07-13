@@ -246,8 +246,8 @@ namespace NzbDrone.Host
             }
 
             app.UseForwardedHeaders();
-            app.UseMiddleware<LoggingMiddleware>();
             app.UseMiddleware<OpenTelemetryApiMiddleware>();
+            app.UseMiddleware<LoggingMiddleware>();
             app.UsePathBase(new PathString(configFileProvider.UrlBase));
             app.UseExceptionHandler(new ExceptionHandlerOptions
             {
