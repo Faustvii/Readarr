@@ -39,10 +39,26 @@ namespace NzbDrone.Core.Books
 
         public List<Series> GetByAuthorId(int authorId)
         {
-            return QueryDistinct(Builder().Join<Series, SeriesBookLink>((l, r) => l.Id == r.SeriesId)
+            var series = QueryDistinct(Builder().Join<Series, SeriesBookLink>((l, r) => l.Id == r.SeriesId)
                                  .Join<SeriesBookLink, Book>((l, r) => l.BookId == r.Id)
                                  .Join<Book, Author>((l, r) => l.AuthorMetadataId == r.AuthorMetadataId)
-                                 .Where<Author>(x => x.Id == authorId));
+                                 .Where<Author>(x => x.Id == authorId))
+                                 .ToList();
+
+            if (!series.Any())
+            {
+                return new List<Series>();
+            }
+
+            var seriesIds = series.Select(x => x.Id).ToHashSet();
+            var links = _database.Query<SeriesBookLink>(Builder().Where<SeriesBookLink>(x => seriesIds.Contains(x.SeriesId)));
+
+            foreach (var s in series)
+            {
+                s.LinkItems = links.Where(x => x.SeriesId == s.Id).ToList();
+            }
+
+            return series;
         }
     }
 }
