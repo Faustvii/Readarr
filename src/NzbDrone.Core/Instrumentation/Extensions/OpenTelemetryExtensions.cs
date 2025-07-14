@@ -45,9 +45,9 @@ namespace NzbDrone.Core.Instrumentation.Extensions
                     serviceInstanceId: Environment.MachineName)
                 .AddAttributes(new KeyValuePair<string, object>[]
                 {
-                    new ("environment", "production"),
+                    new ("environment", RuntimeInfo.IsProduction ? "production" : "development"),
                     new ("runtime", ".NET"),
-                    new ("os", "unknown")
+                    new ("os", OsInfo.Os.ToString())
                 });
 
             // Manual OpenTelemetry setup without DependencyInjection package

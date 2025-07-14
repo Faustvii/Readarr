@@ -35,6 +35,7 @@ namespace NzbDrone.Core.Messaging.Commands
 
         private void ExecuteCommands()
         {
+            Activity.Current = null;
             try
             {
                 foreach (var command in _commandQueueManager.Queue(_cancellationTokenSource.Token))
@@ -63,7 +64,7 @@ namespace NzbDrone.Core.Messaging.Commands
             where TCommand : Command
         {
             var handler = default(IExecute<TCommand>);
-            using var activity = CommandActivitySource.StartActivity($"Command.{command.GetType().Name}");
+            using var activity = CommandActivitySource.StartActivity($"Command.{command.GetType().Name}", ActivityKind.Internal, parentContext: default);
             activity?.SetTag("command.type", command.GetType().FullName);
             activity?.SetTag("command.name", command.Name);
             activity?.SetTag("command.trigger", command.Trigger.ToString());

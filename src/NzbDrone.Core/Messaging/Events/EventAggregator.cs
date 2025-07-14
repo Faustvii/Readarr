@@ -129,7 +129,7 @@ namespace NzbDrone.Core.Messaging.Events
 
                 _taskFactory.StartNew(() =>
                 {
-                    using var handlerActivity = EventActivitySource.StartActivity($"Event.{eventName}.{handlerLocal.GetType().Name}");
+                    using var handlerActivity = EventActivitySource.StartActivity($"Event.{eventName}.{handlerLocal.GetType().Name}", System.Diagnostics.ActivityKind.Internal, parentContext: default);
                     handlerActivity?.SetTag("event.type", @event.GetType().FullName);
                     handlerActivity?.SetTag("event.name", eventName);
                     handlerActivity?.SetTag("handler.type", handlerLocal.GetType().FullName);
@@ -163,7 +163,7 @@ namespace NzbDrone.Core.Messaging.Events
 
                 _taskFactory.StartNew(() =>
                 {
-                    using var handlerActivity = EventActivitySource.StartActivity($"Event.{eventName}.{handlerLocal.GetType().Name}");
+                    using var handlerActivity = EventActivitySource.StartActivity($"Event.{eventName}.{handlerLocal.GetType().Name}", System.Diagnostics.ActivityKind.Internal, parentContext: default);
                     handlerActivity?.SetTag("event.type", @event.GetType().FullName);
                     handlerActivity?.SetTag("event.name", eventName);
                     handlerActivity?.SetTag("handler.type", handlerLocal.GetType().FullName);
