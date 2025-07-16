@@ -13,6 +13,7 @@ namespace NzbDrone.Core.Datastore
         DatabaseConnectionInfo LogDbConnection { get; }
         DatabaseConnectionInfo CacheDbConnection { get; }
         string GetDatabasePath(string connectionString);
+        string EfCoreMainDbConnectionString { get; }
     }
 
     public class ConnectionStringFactory : IConnectionStringFactory
@@ -78,6 +79,30 @@ namespace NzbDrone.Core.Datastore
             };
 
             return new DatabaseConnectionInfo(DatabaseType.PostgreSQL, connectionBuilder.ConnectionString);
+        }
+
+        public string GetEfCoreConnectionString(string dbPath)
+        {
+            var connectionBuilder = new SQLiteConnectionStringBuilder
+            {
+                DataSource = dbPath,
+                Pooling = true,
+            };
+            return connectionBuilder.ConnectionString;
+        }
+
+        public string EfCoreMainDbConnectionString
+        {
+            get
+            {
+                if (MainDbConnection.DatabaseType == DatabaseType.SQLite)
+                {
+                    var builder = new SQLiteConnectionStringBuilder(MainDbConnection.ConnectionString);
+                    return GetEfCoreConnectionString(builder.DataSource);
+                }
+
+                return MainDbConnection.ConnectionString;
+            }
         }
     }
 }

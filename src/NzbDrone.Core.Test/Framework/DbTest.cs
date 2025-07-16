@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -168,6 +169,20 @@ namespace NzbDrone.Core.Test.Framework
             Mocker.SetConstant<ILoggerProvider>(NullLoggerProvider.Instance);
         }
 
+        private class TestDbContextFactory : IDbContextFactory<ApplicationDbContext>
+        {
+            private readonly DbContextOptions<ApplicationDbContext> _options;
+            public TestDbContextFactory(DbContextOptions<ApplicationDbContext> options)
+            {
+                _options = options;
+            }
+
+            public ApplicationDbContext CreateDbContext()
+            {
+                return new ApplicationDbContext(_options);
+            }
+        }
+
         protected void SetupContainer()
         {
             WithTempAsAppPath();
@@ -182,6 +197,15 @@ namespace NzbDrone.Core.Test.Framework
             Mocker.SetConstant<IConfigFileProvider>(Mocker.Resolve<ConfigFileProvider>());
             Mocker.SetConstant<IConnectionStringFactory>(Mocker.Resolve<ConnectionStringFactory>());
             Mocker.SetConstant<IMigrationController>(Mocker.Resolve<MigrationController>());
+
+            var connectionStringFactory = Mocker.Resolve<IConnectionStringFactory>();
+            var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
+            optionsBuilder
+                .UseSqlite(connectionStringFactory.EfCoreMainDbConnectionString)
+                .LogTo(TestContext.Progress.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information);
+
+            var factory = new TestDbContextFactory(optionsBuilder.Options);
+            Mocker.SetConstant<IDbContextFactory<ApplicationDbContext>>(factory);
 
             SqlBuilderExtensions.LogSql = true;
         }

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -195,6 +196,16 @@ namespace NzbDrone.Host
             });
 
             services.AddAppAuthentication();
+
+            // EF Core ApplicationDbContext registration (pooled factory)
+            services.AddPooledDbContextFactory<NzbDrone.Core.Datastore.ApplicationDbContext>((serviceProvider, options) =>
+            {
+                var connectionStringFactory = serviceProvider.GetRequiredService<NzbDrone.Core.Datastore.IConnectionStringFactory>();
+                options.UseSqlite(connectionStringFactory.EfCoreMainDbConnectionString);
+            });
+
+            // Register EFCoreCustomFormatRepository for ICustomFormatRepository
+            services.AddScoped<NzbDrone.Core.CustomFormats.ICustomFormatRepository, NzbDrone.Core.CustomFormats.EFCoreCustomFormatRepository>();
         }
 
         public void Configure(IApplicationBuilder app,

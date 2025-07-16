@@ -3,6 +3,7 @@
     <TargetFrameworks>net6.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="System.Buffers" />
     <PackageReference Include="NBuilder" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />

@@ -29,11 +29,11 @@
     <PackageVersion Include="Mailkit" Version="4.8.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.35" />
     <PackageVersion Include="Microsoft.Data.SqlClient" Version="2.1.7" />
-    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="6.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.2" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="7.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
     <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
@@ -76,5 +76,8 @@
     <PackageVersion Include="System.Text.Json" Version="6.0.10" />
     <PackageVersion Include="System.ValueTuple" Version="4.6.1" />
     <PackageVersion Include="TagLibSharp-Lidarr" Version="2.2.0.19" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="6.0.27" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.27" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.22" />
   </ItemGroup>
 </Project>
