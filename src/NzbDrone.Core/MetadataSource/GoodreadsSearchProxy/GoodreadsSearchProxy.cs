@@ -15,28 +15,24 @@ namespace NzbDrone.Core.MetadataSource.Goodreads
     public class GoodreadsSearchProxy : IGoodreadsSearchProxy
     {
         private readonly ICachedHttpResponseService _cachedHttpClient;
+        private readonly IMetadataRequestBuilder _metadataRequestBuilder;
         private readonly Logger _logger;
-        private readonly IHttpRequestBuilderFactory _searchBuilder;
 
         public GoodreadsSearchProxy(ICachedHttpResponseService cachedHttpClient,
+            IMetadataRequestBuilder metadataRequestBuilder,
             Logger logger)
         {
             _cachedHttpClient = cachedHttpClient;
+            _metadataRequestBuilder = metadataRequestBuilder;
             _logger = logger;
-
-            _searchBuilder = new HttpRequestBuilder("https://www.goodreads.com/book/auto_complete")
-                .AddQueryParam("format", "json")
-                .SetHeader("User-Agent",
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.116 Safari/537.36")
-                .KeepAlive()
-                .CreateFactory();
         }
 
         public List<SearchJsonResource> Search(string query)
         {
             try
             {
-                var httpRequest = _searchBuilder.Create()
+                var httpRequest = _metadataRequestBuilder.GetRequestBuilder().Create()
+                    .SetSegment("route", "search")
                     .AddQueryParam("q", query)
                     .Build();
 
