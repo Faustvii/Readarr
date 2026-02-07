@@ -285,12 +285,12 @@ namespace NzbDrone.Core.Books
                         e1.""Links"",
                         e1.""Ratings""
                     FROM ""Editions"" e1
-                    WHERE e1.""Monitored"" = 1
+                    WHERE e1.""Monitored"" = true
                     AND e1.""Id"" = (
                         SELECT MIN(e2.""Id"")
                         FROM ""Editions"" e2
                         WHERE e2.""BookId"" = e1.""BookId""
-                        AND e2.""Monitored"" = 1
+                        AND e2.""Monitored"" = true
                     )
                 ) e ON b.""Id"" = e.""BookId""
                 LEFT JOIN (
