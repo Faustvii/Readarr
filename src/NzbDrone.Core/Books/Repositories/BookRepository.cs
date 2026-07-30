@@ -294,11 +294,11 @@ namespace NzbDrone.Core.Books
                     )
                 ) e ON b.""Id"" = e.""BookId""
                 LEFT JOIN (
-                    SELECT sbl.""BookId"", s.""Title"" as SeriesTitle
+                    SELECT sbl.""BookId"", s.""Title"" as ""SeriesTitle""
                     FROM ""SeriesBookLink"" sbl
                     LEFT JOIN ""Series"" s ON sbl.""SeriesId"" = s.""Id""
                     INNER JOIN (
-                        SELECT ""BookId"", MIN(""Id"") as MinId
+                        SELECT ""BookId"", MIN(""Id"") as ""MinId""
                         FROM ""SeriesBookLink""
                         GROUP BY ""BookId""
                     ) first_series ON sbl.""BookId"" = first_series.""BookId"" AND sbl.""Id"" = first_series.""MinId""
