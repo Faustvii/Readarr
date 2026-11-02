@@ -155,13 +155,7 @@ namespace NzbDrone.Core.Download.Clients.QBittorrent
                 AddTorrentSeedingFormParameters(request, seedConfiguration);
             }
 
-            var result = ProcessRequest(request, settings);
-
-            // Note: Older qbit versions returned nothing, so we can't do != "Ok." here.
-            if (result == "Fails.")
-            {
-                throw new DownloadClientException("Download client failed to add torrent by url");
-            }
+            ProcessAddRequest(request, settings, "Download client failed to add torrent by url");
         }
 
         public void AddTorrentFromFile(string fileName, byte[] fileContent, TorrentSeedConfiguration seedConfiguration, QBittorrentSettings settings)
@@ -177,13 +171,7 @@ namespace NzbDrone.Core.Download.Clients.QBittorrent
                 AddTorrentSeedingFormParameters(request, seedConfiguration);
             }
 
-            var result = ProcessRequest(request, settings);
-
-            // Note: Current qbit versions return nothing, so we can't do != "Ok." here.
-            if (result == "Fails.")
-            {
-                throw new DownloadClientException("Download client failed to add torrent");
-            }
+            ProcessAddRequest(request, settings, "Download client failed to add torrent");
         }
 
         public void RemoveTorrent(string hash, bool removeData, QBittorrentSettings settings)
@@ -335,6 +323,25 @@ namespace NzbDrone.Core.Download.Clients.QBittorrent
                                                 .AddFormParameter("hashes", hash)
                                                 .AddFormParameter("value", enabled ? "true" : "false");
             ProcessRequest(request, settings);
+        }
+
+        private void ProcessAddRequest(HttpRequestBuilder requestBuilder, QBittorrentSettings settings, string failureMessage)
+        {
+            try
+            {
+                var result = ProcessRequest(requestBuilder, settings);
+
+                // Note: Older qbit versions returned nothing, so we can't do != "Ok." here.
+                if (result == "Fails.")
+                {
+                    throw new DownloadClientException(failureMessage);
+                }
+            }
+            catch (DownloadClientException ex) when (ex.InnerException is HttpException httpException && httpException.Response.StatusCode == HttpStatusCode.Conflict)
+            {
+                // qBittorrent returns 409 when the torrent is already in the client.
+                _logger.Debug("Torrent already exists in qBittorrent, treating add as success.");
+            }
         }
 
         private HttpRequestBuilder BuildRequest(QBittorrentSettings settings)
